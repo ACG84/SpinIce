@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "asvi-rc"
+version = "0.1.0"
+description = "Reservoir computing with a 3D multilayered artificial spin-vortex ice, simulated with mumax3 / mumax+"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.22", "scipy>=1.8", "matplotlib>=3.5"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+include = ["asvi_rc*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

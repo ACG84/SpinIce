@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+runs/
+mumax3/out/
+*.out/
+*.ovf
+*.npz
+*.npy
+.pytest_cache/
