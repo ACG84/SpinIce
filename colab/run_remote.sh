@@ -25,7 +25,7 @@ COLAB=${COLAB_BIN:-colab}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cmd=${1:-help}; shift || true
 
-py() { printf '%s\n' "$1" | "$COLAB" exec -s "$SESSION"; }
+py() { printf '%s\n' "$1" | "$COLAB" exec -s "$SESSION" --timeout "${COLAB_TIMEOUT:-86400}"; }
 upload_repo() {
   tar -C "$ROOT" -czf /tmp/spinice.tar.gz --exclude=.git --exclude=runs --exclude='__pycache__' .
   "$COLAB" upload -s "$SESSION" /tmp/spinice.tar.gz /content/spinice.tar.gz
