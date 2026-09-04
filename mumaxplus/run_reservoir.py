@@ -51,6 +51,12 @@ def params_from_args(a) -> ASVIParams:
     return p
 
 
+def _allow_negative_sci(parser: argparse.ArgumentParser):
+    """Let argparse accept values like -20e-3 (default matcher only handles -20 / -0.02)."""
+    import re
+    parser._negative_number_matcher = re.compile(r"^-(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--task", default="mackey_glass_10", choices=list(tasks.TASKS))
@@ -72,6 +78,7 @@ def main(argv=None):
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--save-every", type=int, default=10)
     add_common_args(ap)
+    _allow_negative_sci(ap)
     a = ap.parse_args(argv)
 
     p = params_from_args(a)
