@@ -177,3 +177,20 @@ several hours for a 400-point dataset. Reduce cost with `--loop-step 2e-3`,
   computing in an artificial spin-vortex ice via spin-wave fingerprinting", Nat. Nanotechnol. 17, 460 (2022).
 * A. Vansteenkiste *et al.*, "The design and verification of MuMax3", AIP Adv. 4, 107133 (2014).
 * mumax⁺: <https://github.com/mumax/plus>, npj Comput. Mater. (2025), doi:10.1038/s41524-025-01893-y.
+
+## Workflow C – Google Colab from the terminal (Colab CLI)
+
+No local GPU? The [Colab CLI](https://github.com/googlecolab/google-colab-cli)
+rents a Colab GPU VM from your shell (`uv tool install google-colab-cli`, then
+`colab sessions` once to log in). `colab/run_remote.sh` wraps the whole flow:
+
+```bash
+colab/run_remote.sh setup T4                       # new VM, upload repo, pip install mumaxplus, smoke test
+colab/run_remote.sh sweep --b-start=-30e-3 --b-stop 60e-3 --n-cells 1 1 --out=runs/sweep
+colab/run_remote.sh reservoir --task mackey_glass_10 --n 200 --n-cells 2 2 --out=runs/mg10
+python scripts/train_readout.py runs/colab/mg10_spectra.npz --n-train 100 --plot mg10.png
+colab/run_remote.sh stop                           # the VM is billed until you stop it
+```
+
+The kernel state persists between calls, results are downloaded to `runs/colab/`,
+and `colab/run_remote.sh sync` re-uploads the repo after local edits.
