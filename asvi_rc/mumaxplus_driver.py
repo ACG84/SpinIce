@@ -48,9 +48,10 @@ class ASVISimulation:
         self.mask, self.regions, self.islands = build_geometry(p, islands or build_islands(p))
         nx, ny, nz = p.grid
         # periodic (in-plane) master grid = the supercell; z is open
+        pbc = tuple(p.pbc_repetitions)
+        master = Grid((nx if pbc[0] else 0, ny if pbc[1] else 0, 0))
         self.world = World(cellsize=(p.cell_xy, p.cell_xy, p.cell_z),
-                           pbc_repetitions=tuple(p.pbc_repetitions),
-                           mastergrid=Grid((nx, ny, 0)))
+                           pbc_repetitions=pbc, mastergrid=master)
         self.magnet = Ferromagnet(self.world, Grid((nx, ny, nz)), name="asvi",
                                   geometry=self.mask, regions=self.regions)
         self.magnet.msat = p.msat
@@ -128,6 +129,10 @@ class ASVISimulation:
         self.set_magnetization(m0)                      # discard ring-down, keep the static state
         freqs, power = power_spectrum(m_t, p.fmr_dt)
         return (freqs, power, m_t) if return_timeseries else (freqs, power)
+
+    def total_energy(self) -> float:
+        """Total micromagnetic energy (J) of the current state."""
+        return float(self.magnet.total_energy.eval())
 
     def save_state(self, path):
         np.save(path, self.get_magnetization())

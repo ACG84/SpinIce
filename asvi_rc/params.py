@@ -39,6 +39,7 @@ class ASVIParams:
     cell_xy: float = 5e-9
     cell_z: float = 5e-9
     pbc_repetitions: tuple[int, int, int] = (4, 4, 0)
+    box_override: tuple[float, float] | None = None   # explicit lateral box (m) instead of n_cells x a
     # --- material (Ni81Fe19) -----------------------------------------------------------
     msat: float = 800e3
     aex: float = 13e-12
@@ -62,7 +63,9 @@ class ASVIParams:
 
     @property
     def box(self) -> tuple[float, float]:
-        """Lateral size of the periodic simulation box (m)."""
+        """Lateral size of the simulation box (m)."""
+        if self.box_override is not None:
+            return tuple(self.box_override)
         a = self.lattice_constant
         return (self.n_cells[0] * a, self.n_cells[1] * a)
 
@@ -103,8 +106,8 @@ class ASVIParams:
     @classmethod
     def from_dict(cls, d: dict) -> "ASVIParams":
         d = dict(d)
-        for k in ("top_offset", "n_cells", "pbc_repetitions"):
-            if k in d:
+        for k in ("top_offset", "n_cells", "pbc_repetitions", "box_override"):
+            if k in d and d[k] is not None:
                 d[k] = tuple(d[k])
         return cls(**d)
 

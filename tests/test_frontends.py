@@ -79,3 +79,17 @@ def test_mock_pipeline_end_to_end():
     X = reservoir_features(freqs, power, proto)
     r = readout.evaluate(X, y, n_train=70, alpha=1e-2, washout=10, u=u)
     assert np.isfinite(r["mse_test"])
+
+
+def test_state_catalogue_dry_run(monkeypatch, tmp_path):
+    fake = Path(__file__).parent / "fake_mumaxplus"
+    monkeypatch.syspath_prepend(str(fake))
+    for mod in [m for m in sys.modules if m.startswith("mumaxplus")]:
+        del sys.modules[mod]
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "mumaxplus"))
+    import importlib
+    cat = importlib.import_module("state_catalogue")
+    cat.main(["--unit", "single", "--cell-xy", "20e-9", "--cell-z", "5e-9", "--max-states", "3",
+              "--fast", "--out", str(tmp_path)])
+    res = json.loads((tmp_path / "catalogue.json").read_text())
+    assert len(res["rows"]) == 3 and res["rows"][0]["initial"] == ["+", "+"]

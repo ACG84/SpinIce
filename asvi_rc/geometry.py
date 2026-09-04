@@ -76,6 +76,49 @@ def build_islands(p: ASVIParams, rng: np.random.Generator | None = None) -> list
     return islands
 
 
+def single_island(p: ASVIParams, angle_deg: float = 0.0) -> list[Island]:
+    """Both layers of one 3D island centred in the box (use with p.box_override, no PBC)."""
+    bx, by = p.box
+    out = []
+    for layer in (0, 1):
+        dx, dy = (0.0, 0.0) if layer == 0 else p.top_offset
+        out.append(Island(0, layer, bx / 2 + dx, by / 2 + dy, angle_deg, p.length, p.width))
+    return out
+
+
+def circulation(p: ASVIParams, m: np.ndarray, regions: np.ndarray, isl: Island) -> float:
+    """Normalised in-plane circulation of one layer-island: ~+-0.8 for a vortex, ~0 for a macrospin."""
+    xx, yy = lateral_meshgrid(p)
+    u, v = _local_coords(xx, yy, isl, p.box)
+    c, s = isl.axis
+    tot, norm = 0.0, 0.0
+    for k in range(regions.shape[0]):
+        sel = regions[k] == isl.region
+        if not sel.any():
+            continue
+        mu = c * m[0, k][sel] + s * m[1, k][sel]
+        mv = -s * m[0, k][sel] + c * m[1, k][sel]
+        tot += np.sum(u[sel] * mv - v[sel] * mu)
+        norm += np.sum(np.hypot(u[sel], v[sel]))
+    return float(tot / norm) if norm else 0.0
+
+
+def classify_layer(p: ASVIParams, m: np.ndarray, regions: np.ndarray, isl: Island,
+                   macrospin_min: float = 0.6, vortex_min: float = 0.3) -> str:
+    """'+'/'-' macrospin along +-axis, 'V+'/'V-' vortex by circulation sign, 'X' otherwise (onion/edge state)."""
+    sel = regions == isl.region
+    mavg = np.array([m[c][sel].mean() for c in range(3)])
+    proj = float(mavg[0] * isl.axis[0] + mavg[1] * isl.axis[1])
+    if proj > macrospin_min:
+        return "+"
+    if proj < -macrospin_min:
+        return "-"
+    circ = circulation(p, m, regions, isl)
+    if abs(circ) > vortex_min:
+        return "V+" if circ > 0 else "V-"
+    return "X"
+
+
 def _local_coords(xx, yy, isl: Island, box):
     """Minimum-image coordinates (u along axis, v across) relative to island centre."""
     Lx, Ly = box

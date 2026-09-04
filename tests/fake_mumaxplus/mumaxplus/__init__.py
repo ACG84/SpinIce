@@ -88,6 +88,14 @@ class Ferromagnet:
     def minimize(self, tol=1e-6, nsamples=10):
         self.world.minimize()
 
+    @property
+    def total_energy(self):
+        m = self._m.eval()
+        class _E:
+            def eval(self_inner):
+                return -1e-18 * float(np.abs(m.reshape(3, -1).mean(axis=1)).sum())
+        return _E()
+
 
 class TimeSolver:
     def __init__(self, world):
