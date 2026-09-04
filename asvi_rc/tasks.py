@@ -155,6 +155,26 @@ def _ramp(b_from: float, b_to: float, step: float) -> np.ndarray:
     return b_from + (b_to - b_from) * np.arange(1, n + 1) / n
 
 
+def _adaptive_ramp(b_from: float, b_to: float, proto: ProtocolParams) -> np.ndarray:
+    """Ramp with `loop_step` where |B| >= coarse_below and `coarse_step` below it.
+
+    Far from the switching window nothing happens, so larger quasi-static
+    increments there save energy minimisations without changing the
+    trajectory near the switching fields.
+    """
+    if not proto.coarse_step or proto.coarse_below <= 0:
+        return _ramp(b_from, b_to, proto.loop_step)
+    thr = proto.coarse_below
+    # split the interval at +-thr into fine / coarse pieces
+    pts = sorted({b_from, b_to, *[x for x in (-thr, thr) if min(b_from, b_to) < x < max(b_from, b_to)]},
+                 reverse=bool(b_to < b_from))
+    out = []
+    for a, b in zip(pts[:-1], pts[1:]):
+        step = proto.coarse_step if max(abs(a), abs(b)) <= thr + 1e-12 else proto.loop_step
+        out.append(_ramp(a, b, step))
+    return np.concatenate(out) if out else np.array([b_to])
+
+
 def measurement_field(b_loop: float, proto: ProtocolParams) -> float:
     """Signed field amplitude (along the loop axis) at which FMR is measured."""
     return b_loop if proto.measure_at == "loop_max" else proto.bias_field
@@ -169,16 +189,16 @@ def minor_loop(b_loop: float, proto: ProtocolParams, b_start: float | None = Non
     """
     if b_start is None:
         b_start = measurement_field(b_loop, proto)
-    s = proto.loop_step
+    r = lambda a, b: _adaptive_ramp(a, b, proto)  # noqa: E731
     if proto.loop_shape == "bipolar":
-        seq = [_ramp(b_start, -b_loop, s), _ramp(-b_loop, +b_loop, s)]
+        seq = [r(b_start, -b_loop), r(-b_loop, +b_loop)]
     elif proto.loop_shape == "unipolar":
-        seq = [_ramp(b_start, +b_loop, s)]
+        seq = [r(b_start, +b_loop)]
     elif proto.loop_shape == "return":
-        seq = [_ramp(b_start, -b_loop, s), _ramp(-b_loop, +b_loop, s), _ramp(+b_loop, 0.0, s)]
+        seq = [r(b_start, -b_loop), r(-b_loop, +b_loop), r(+b_loop, 0.0)]
     else:
         raise ValueError(f"unknown loop_shape {proto.loop_shape!r}")
-    seq.append(_ramp(seq[-1][-1], measurement_field(b_loop, proto), s))
+    seq.append(r(seq[-1][-1], measurement_field(b_loop, proto)))
     out = np.concatenate(seq)
     # drop consecutive duplicates
     keep = np.ones(len(out), dtype=bool)

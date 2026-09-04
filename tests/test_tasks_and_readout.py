@@ -31,6 +31,20 @@ def test_minor_loop_shapes():
     assert ramp.max() == pytest.approx(25e-3) and ramp.min() > -1.3e-3
 
 
+def test_adaptive_loop_stepping():
+    pr = ProtocolParams(loop_step=2e-3, coarse_step=5e-3, coarse_below=22e-3)
+    ramp = tasks.minor_loop(34e-3, pr, b_start=34e-3)
+    fine = ramp[np.abs(ramp) >= 22e-3 - 1e-9]
+    assert ramp[-1] == pytest.approx(34e-3) and ramp.min() == pytest.approx(-34e-3)
+    assert np.all(np.abs(np.diff(ramp)) <= 5e-3 + 1e-9)
+    # fine region visited in 2 mT steps, coarse region in larger ones
+    assert np.any(np.isclose(fine, 24e-3)) and np.any(np.isclose(fine, -26e-3))
+    coarse = ramp[np.abs(ramp) <= 21e-3]
+    assert len(coarse) == 4 * 4     # 4 passes through |B|<22 mT in ~5 mT steps
+    plain = tasks.minor_loop(34e-3, ProtocolParams(loop_step=2e-3), b_start=34e-3)
+    assert len(ramp) < len(plain)
+
+
 def test_field_schedule_continuity():
     pr = ProtocolParams()
     u = np.linspace(0, 1, 5)

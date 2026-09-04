@@ -148,6 +148,8 @@ class ProtocolParams:
     loop_shape: str = "bipolar"
     loop_step: float = 1e-3              # quasi-static field increment inside a loop
     approach_step: float = 10e-3         # coarser increment when coming down from saturation
+    coarse_step: float | None = None     # optional larger increment used while |B| < coarse_below
+    coarse_below: float = 0.0            # (T) fine `loop_step` is used at and above this amplitude
     measure_at: str = "loop_max"         # "loop_max" or "bias"
     bias_field: float = -1.2e-3          # used when measure_at == "bias"
     saturation_field: float = 0.2        # initial saturation (-x) amplitude
