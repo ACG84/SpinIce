@@ -90,6 +90,14 @@ def test_state_catalogue_dry_run(monkeypatch, tmp_path):
     import importlib
     cat = importlib.import_module("state_catalogue")
     cat.main(["--unit", "single", "--cell-xy", "20e-9", "--cell-z", "5e-9", "--max-states", "3",
-              "--fast", "--out", str(tmp_path)])
+              "--fast", "--transitions", "--trans-amplitudes", "30e-3", "40e-3", "10e-3",
+              "--out", str(tmp_path)])
     res = json.loads((tmp_path / "catalogue.json").read_text())
     assert len(res["rows"]) == 3 and res["rows"][0]["initial"] == ["+", "+"]
+    tr = json.loads((tmp_path / "transitions.json").read_text())
+    assert len(tr["states"]) >= 1 and set(tr["table"]["0"]) == {"+30.0", "+40.0", "-30.0", "-40.0"}
+    # the CPU automaton evaluator runs on the table (one-hot features)
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    auto = importlib.import_module("automaton_rc")
+    auto.main([str(tmp_path / "transitions.json"), "--n", "200", "--b-min", "30e-3", "--b-max", "40e-3",
+               "--leak", "35e-3", "--leak-jitter", "5e-3"])

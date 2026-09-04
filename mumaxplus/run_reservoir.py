@@ -132,7 +132,8 @@ def main(argv=None):
               f"peak {freqs[np.argmax(P.sum(axis=1)[1:]) + 1]/1e9:5.2f} GHz  "
               f"{el/(k + 1 - start):5.1f} s/step", flush=True)
         if (k + 1) % a.save_every == 0 or k + 1 == len(sched):
-            save_spectra(partial, freqs, np.stack(power), np.array(b_loop), u=u[:k + 1], y=y[:k + 1])
+            save_spectra(partial, freqs, np.stack(power), np.array(b_loop), u=u[:k + 1], y=y[:k + 1],
+                         b_leak=np.array([s.get("b_leak", np.nan) for s in sched[:k + 1]]))
             sim.save_state(ckpt)
 
     save_spectra(out / "spectra.npz", freqs, np.stack(power), np.array(b_loop), u=u, y=y,
