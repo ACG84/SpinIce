@@ -64,16 +64,21 @@ def test_alternating_protocol():
 
 
 def test_leak_protocol():
-    pr = ProtocolParams(loop_shape="leak", leak_field=30e-3, bias_field=-1.2e-3, loop_step=2e-3)
-    sched = tasks.field_schedule(np.array([0.3, 1.0, 0.0]), pr)
+    pr = ProtocolParams(loop_shape="leak", leak_field=33e-3, leak_jitter=5e-3, bias_field=-1.2e-3, loop_step=2e-3)
+    sched = tasks.field_schedule(np.array([0.3, 1.0, 0.0, 0.5]), pr)
+    leaks = np.array([s["leak"] for s in sched])
+    assert np.all((leaks >= 28e-3) & (leaks <= 38e-3)) and len(set(np.round(leaks, 6))) > 1
     for s in sched:
         assert s["b_meas"] == pytest.approx(-1.2e-3) and s["ramp"][-1] == pytest.approx(-1.2e-3)
         assert s["ramp"].max() == pytest.approx(s["b_loop"])
     for s in sched[1:]:                      # step 0 starts with the approach from -B_sat
-        assert s["ramp"].min() == pytest.approx(-30e-3)
-        # order: up to +B, down through -leak, back to bias
+        assert s["ramp"].min() == pytest.approx(-s["leak"])
+        # order: leak (negative) first, then the write (+B), then back to the bias
         i_max, i_min = np.argmax(s["ramp"]), np.argmin(s["ramp"])
-        assert i_max < i_min < len(s["ramp"]) - 1
+        assert i_min < i_max < len(s["ramp"]) - 1
+    # reproducible leak sequence
+    sched2 = tasks.field_schedule(np.array([0.3, 1.0, 0.0, 0.5]), pr)
+    assert np.allclose(leaks, [s["leak"] for s in sched2])
 
 
 def test_field_schedule_continuity():

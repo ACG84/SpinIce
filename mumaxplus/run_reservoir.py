@@ -63,7 +63,9 @@ def main(argv=None):
     ap.add_argument("--loop-step", type=float, default=None)
     ap.add_argument("--coarse-step", type=float, default=None, help="larger increment used while |B| < --coarse-below")
     ap.add_argument("--coarse-below", type=float, default=None)
-    ap.add_argument("--leak-field", type=float, default=None, help="reset field magnitude for --loop-shape leak")
+    ap.add_argument("--leak-field", type=float, default=None, help="mean reset field magnitude for --loop-shape leak")
+    ap.add_argument("--leak-jitter", type=float, default=None, help="half-width of the random leak window")
+    ap.add_argument("--leak-seed", type=int, default=None)
     ap.add_argument("--measure-at", default=None, choices=["loop_max", "bias"])
     ap.add_argument("--robust", action="store_true", help="use relax() instead of minimize() in loops")
     ap.add_argument("--resume", action="store_true")
@@ -81,6 +83,8 @@ def main(argv=None):
     if a.coarse_step: proto.coarse_step = a.coarse_step
     if a.coarse_below is not None: proto.coarse_below = a.coarse_below
     if a.leak_field is not None: proto.leak_field = a.leak_field
+    if a.leak_jitter is not None: proto.leak_jitter = a.leak_jitter
+    if a.leak_seed is not None: proto.leak_seed = a.leak_seed
     if a.measure_at: proto.measure_at = a.measure_at
 
     out = Path(a.out)
@@ -123,7 +127,8 @@ def main(argv=None):
             sim.save_state(ckpt)
 
     save_spectra(out / "spectra.npz", freqs, np.stack(power), np.array(b_loop), u=u, y=y,
-                 region_ids=np.array(sim.region_ids), task=a.task)
+                 region_ids=np.array(sim.region_ids), task=a.task,
+                 b_leak=np.array([s["leak"] for s in sched]), loop_shape=proto.loop_shape)
     print("wrote", out / "spectra.npz")
 
 

@@ -185,7 +185,7 @@ def measurement_field(b_loop: float, proto: ProtocolParams, sign: float = 1.0) -
 
 
 def minor_loop(b_loop: float, proto: ProtocolParams, b_start: float | None = None,
-               sign: float = 1.0) -> np.ndarray:
+               sign: float = 1.0, leak: float | None = None) -> np.ndarray:
     """Signed field magnitudes (along the loop axis) of one quasi-static minor loop.
 
     The sequence starts *after* ``b_start`` (default: the previous
@@ -198,7 +198,8 @@ def minor_loop(b_loop: float, proto: ProtocolParams, b_start: float | None = Non
     if proto.loop_shape == "alternating":
         seq = [r(b_start, sign * b_loop)]
     elif proto.loop_shape == "leak":
-        seq = [r(b_start, +b_loop), r(+b_loop, -proto.leak_field)]
+        L = proto.leak_field if leak is None else leak
+        seq = [r(b_start, -L), r(-L, +b_loop)]
     elif proto.loop_shape == "bipolar":
         seq = [r(b_start, -b_loop), r(-b_loop, +b_loop)]
     elif proto.loop_shape == "unipolar":
@@ -229,18 +230,22 @@ def field_schedule(u: np.ndarray, proto: ProtocolParams) -> list[dict]:
     ``b_meas``.
     """
     b_loops = input_to_field(u, proto)
+    rng = np.random.default_rng(proto.leak_seed)
+    leaks = proto.leak_field + proto.leak_jitter * rng.uniform(-1, 1, len(b_loops))
     sched = []
     prev = None  # we start from negative saturation
     for k, b in enumerate(b_loops):
         sign = (-1.0) ** k if proto.loop_shape == "alternating" else 1.0
+        leak = float(leaks[k]) if proto.loop_shape == "leak" else None
         if prev is None:
             # coarse descent from -B_sat towards the first loop, then the loop proper
-            first = -float(b) if proto.loop_shape != "alternating" else -float(b)
+            first = -float(b) if leak is None else -leak
             approach = _ramp(-proto.saturation_field, first, proto.approach_step)[:-1]
-            ramp = np.concatenate([approach, minor_loop(float(b), proto, b_start=first, sign=sign)])
+            ramp = np.concatenate([approach, minor_loop(float(b), proto, b_start=first, sign=sign, leak=leak)])
         else:
-            ramp = minor_loop(float(b), proto, b_start=prev, sign=sign)
+            ramp = minor_loop(float(b), proto, b_start=prev, sign=sign, leak=leak)
         b_meas = measurement_field(float(b), proto, sign)
-        sched.append({"b_loop": float(b), "ramp": ramp, "b_meas": b_meas, "sign": sign})
+        sched.append({"b_loop": float(b), "ramp": ramp, "b_meas": b_meas, "sign": sign,
+                      "leak": leak if leak is not None else 0.0})
         prev = b_meas
     return sched

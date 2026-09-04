@@ -134,13 +134,16 @@ class ProtocolParams:
                      ends at +B_k; measurement at +B_k unless a bias is given)
     ``"unipolar"`` : B_meas -> +B_k
     ``"return"``   : B_meas -> -B_k -> +B_k -> B_meas
-    ``"leak"``     : B_meas -> +B_k -> -B_leak -> B_meas, measured at the bias
-                     field.  Unipolar write followed by a fixed weak negative
-                     "leak" that resets only the softest elements: elements
-                     with switching field between B_leak and B_k keep a record
-                     of recent inputs that exceeded their threshold (fading
-                     memory of amplitudes).  Set ``leak_field`` between the
-                     softest and hardest switching fields of the array.
+    ``"leak"``     : B_meas -> -L_k -> +B_k -> B_meas, measured at the bias
+                     field.  A negative "leak" field L_k = leak_field +
+                     leak_jitter*U(-1,1) is applied first, then the unipolar
+                     write +B_k.  With deterministic switching fields theta_i
+                     an element is set by the write if B_k >= theta_i and is
+                     otherwise reset with probability P(L_k >= theta_i) per
+                     step, i.e. every element is a leaky memory of the last
+                     input that exceeded its threshold with its own forgetting
+                     rate.  Choose the leak window to straddle the switching
+                     fields; the leak sequence is stored with the run.
     ``"alternating"``: B_meas -> s_k B_k -> B_meas with s_k = (-1)^k, measured at
                      the bias field.  Each layer-island then stores the sign
                      of the last input that exceeded its switching field, so
@@ -162,7 +165,9 @@ class ProtocolParams:
     approach_step: float = 10e-3         # coarser increment when coming down from saturation
     coarse_step: float | None = None     # optional larger increment used while |B| < coarse_below
     coarse_below: float = 0.0            # (T) fine `loop_step` is used at and above this amplitude
-    leak_field: float = 30e-3            # (T) magnitude of the negative reset field for loop_shape="leak"
+    leak_field: float = 33e-3            # (T) mean magnitude of the negative reset field for loop_shape="leak"
+    leak_jitter: float = 5e-3            # (T) half-width of the uniform random leak window
+    leak_seed: int = 0                   # RNG seed of the leak sequence
     measure_at: str = "loop_max"         # "loop_max" or "bias"
     bias_field: float = -1.2e-3          # used when measure_at == "bias"
     saturation_field: float = 0.2        # initial saturation (-x) amplitude
