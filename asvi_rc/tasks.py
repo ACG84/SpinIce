@@ -175,12 +175,15 @@ def _adaptive_ramp(b_from: float, b_to: float, proto: ProtocolParams) -> np.ndar
     return np.concatenate(out) if out else np.array([b_to])
 
 
-def measurement_field(b_loop: float, proto: ProtocolParams) -> float:
+def measurement_field(b_loop: float, proto: ProtocolParams, sign: float = 1.0) -> float:
     """Signed field amplitude (along the loop axis) at which FMR is measured."""
+    if proto.loop_shape == "alternating" and proto.measure_at == "loop_max":
+        return sign * b_loop
     return b_loop if proto.measure_at == "loop_max" else proto.bias_field
 
 
-def minor_loop(b_loop: float, proto: ProtocolParams, b_start: float | None = None) -> np.ndarray:
+def minor_loop(b_loop: float, proto: ProtocolParams, b_start: float | None = None,
+               sign: float = 1.0) -> np.ndarray:
     """Signed field magnitudes (along the loop axis) of one quasi-static minor loop.
 
     The sequence starts *after* ``b_start`` (default: the previous
@@ -188,9 +191,11 @@ def minor_loop(b_loop: float, proto: ProtocolParams, b_start: float | None = Non
     and ends at the measurement field of this loop.
     """
     if b_start is None:
-        b_start = measurement_field(b_loop, proto)
+        b_start = measurement_field(b_loop, proto, sign)
     r = lambda a, b: _adaptive_ramp(a, b, proto)  # noqa: E731
-    if proto.loop_shape == "bipolar":
+    if proto.loop_shape == "alternating":
+        seq = [r(b_start, sign * b_loop)]
+    elif proto.loop_shape == "bipolar":
         seq = [r(b_start, -b_loop), r(-b_loop, +b_loop)]
     elif proto.loop_shape == "unipolar":
         seq = [r(b_start, +b_loop)]
@@ -198,7 +203,7 @@ def minor_loop(b_loop: float, proto: ProtocolParams, b_start: float | None = Non
         seq = [r(b_start, -b_loop), r(-b_loop, +b_loop), r(+b_loop, 0.0)]
     else:
         raise ValueError(f"unknown loop_shape {proto.loop_shape!r}")
-    seq.append(r(seq[-1][-1], measurement_field(b_loop, proto)))
+    seq.append(r(seq[-1][-1], measurement_field(b_loop, proto, sign)))
     out = np.concatenate(seq)
     # drop consecutive duplicates
     keep = np.ones(len(out), dtype=bool)
@@ -222,14 +227,16 @@ def field_schedule(u: np.ndarray, proto: ProtocolParams) -> list[dict]:
     b_loops = input_to_field(u, proto)
     sched = []
     prev = None  # we start from negative saturation
-    for b in b_loops:
+    for k, b in enumerate(b_loops):
+        sign = (-1.0) ** k if proto.loop_shape == "alternating" else 1.0
         if prev is None:
-            # coarse descent from -B_sat to the first loop amplitude, then the loop proper
-            approach = _ramp(-proto.saturation_field, -float(b), proto.approach_step)[:-1]
-            ramp = np.concatenate([approach, minor_loop(float(b), proto, b_start=-float(b))])
+            # coarse descent from -B_sat towards the first loop, then the loop proper
+            first = -float(b) if proto.loop_shape != "alternating" else -float(b)
+            approach = _ramp(-proto.saturation_field, first, proto.approach_step)[:-1]
+            ramp = np.concatenate([approach, minor_loop(float(b), proto, b_start=first, sign=sign)])
         else:
-            ramp = minor_loop(float(b), proto, b_start=prev)
-        b_meas = measurement_field(float(b), proto)
-        sched.append({"b_loop": float(b), "ramp": ramp, "b_meas": b_meas})
+            ramp = minor_loop(float(b), proto, b_start=prev, sign=sign)
+        b_meas = measurement_field(float(b), proto, sign)
+        sched.append({"b_loop": float(b), "ramp": ramp, "b_meas": b_meas, "sign": sign})
         prev = b_meas
     return sched

@@ -58,7 +58,7 @@ def main(argv=None):
     ap.add_argument("--out", type=str, default="runs/reservoir")
     ap.add_argument("--b-min", type=float, default=None)
     ap.add_argument("--b-max", type=float, default=None)
-    ap.add_argument("--loop-shape", default=None, choices=["bipolar", "unipolar", "return"])
+    ap.add_argument("--loop-shape", default=None, choices=["bipolar", "unipolar", "return", "alternating"])
     ap.add_argument("--loop-angle", type=float, default=None)
     ap.add_argument("--loop-step", type=float, default=None)
     ap.add_argument("--coarse-step", type=float, default=None, help="larger increment used while |B| < --coarse-below")

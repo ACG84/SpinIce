@@ -68,7 +68,7 @@ def main(argv=None):
     r.add_argument("--n", type=int, default=400)
     r.add_argument("--b-min", type=float, default=None)
     r.add_argument("--b-max", type=float, default=None)
-    r.add_argument("--loop-shape", default=None, choices=["bipolar", "unipolar", "return"])
+    r.add_argument("--loop-shape", default=None, choices=["bipolar", "unipolar", "return", "alternating"])
     r.add_argument("--loop-angle", type=float, default=None)
     r.add_argument("--loop-step", type=float, default=None)
     r.add_argument("--coarse-step", type=float, default=None, help="larger increment used while |B| < --coarse-below")

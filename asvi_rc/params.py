@@ -134,6 +134,11 @@ class ProtocolParams:
                      ends at +B_k; measurement at +B_k unless a bias is given)
     ``"unipolar"`` : B_meas -> +B_k
     ``"return"``   : B_meas -> -B_k -> +B_k -> B_meas
+    ``"alternating"``: B_meas -> s_k B_k -> B_meas with s_k = (-1)^k, measured at
+                     the bias field.  Each layer-island then stores the sign
+                     of the last input that exceeded its switching field, so
+                     the microstate carries a fading memory of the input
+                     history (a symmetric loop ending at +B_k erases it).
 
     The default field range 20-30 mT straddles the antiparallel->parallel
     switching window (26-30 mT in the experiment) of the multilayer islands,

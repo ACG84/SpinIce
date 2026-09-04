@@ -65,6 +65,14 @@ region-averaged magnetisation, i.e. the spin-wave fingerprint of every element.
 3. Excite with the broadband sinc pulse, record the region-averaged `m(t)` for 26 ns,
    subtract the static state, FFT → power spectrum. The binned spectrum
    (2–14 GHz in 40 MHz bins = 300 outputs; ×16 if `--per-region`) is the reservoir output of step *k*.
+   **Loop shape matters for memory.** A symmetric loop that ends at +B_k
+   leaves every switchable layer in the same state whatever happened before
+   (verified on GPU: features at equal amplitude on rising/falling branches
+   were identical), so the reservoir is then a static nonlinear map of B_k.
+   `loop_shape="alternating"` applies s_k·B_k with s_k = (-1)^k and measures
+   at a small bias field; each layer then stores the sign of the last input
+   that exceeded its switching field, i.e. the switching-field distribution
+   becomes a fading memory. Use it for prediction tasks.
 4. Offline: ridge regression on the outputs of the *current* step only
    (no time multiplexing – all memory must be physical), sequential train/test split,
    MSE / NRMSE, plus a "raw input" baseline regression to show what the reservoir adds.

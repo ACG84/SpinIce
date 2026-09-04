@@ -45,6 +45,24 @@ def test_adaptive_loop_stepping():
     assert len(ramp) < len(plain)
 
 
+def test_alternating_protocol():
+    pr = ProtocolParams(loop_shape="alternating", measure_at="bias", bias_field=-1.2e-3, loop_step=2e-3)
+    u = np.array([0.0, 1.0, 0.5, 1.0])
+    sched = tasks.field_schedule(u, pr)
+    signs = [s["sign"] for s in sched]
+    assert signs == [1.0, -1.0, 1.0, -1.0]
+    for s in sched:
+        assert s["ramp"][-1] == pytest.approx(-1.2e-3)                # measured at the bias field
+        assert np.max(np.abs(s["ramp"])) == pytest.approx(s["b_loop"]) or s is sched[0]
+        assert np.sign(s["ramp"][np.argmax(np.abs(s["ramp"]))]) == s["sign"] or s is sched[0]
+    # ramps are contiguous: each starts near the previous measurement field
+    for a, b in zip(sched[:-1], sched[1:]):
+        assert abs(b["ramp"][0] - a["b_meas"]) <= pr.loop_step + 1e-9
+    pr2 = ProtocolParams(loop_shape="alternating", measure_at="loop_max")
+    s2 = tasks.field_schedule(u, pr2)
+    assert s2[1]["b_meas"] == pytest.approx(-pr2.b_max)
+
+
 def test_field_schedule_continuity():
     pr = ProtocolParams()
     u = np.linspace(0, 1, 5)
