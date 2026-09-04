@@ -194,3 +194,17 @@ colab/run_remote.sh stop                           # the VM is billed until you 
 
 The kernel state persists between calls, results are downloaded to `runs/colab/`,
 and `colab/run_remote.sh sync` re-uploads the repo after local edits.
+
+Practical notes from running this (Colab CLI 0.6.0):
+
+* The CLI's dependency `jupyter-kernel-client` 1.0 renamed a class the CLI
+  imports; pin it: `uv pip install --python <cli venv> "jupyter-kernel-client<1"`.
+* `colab exec` holds a WebSocket and the kernel runs cells serially, so long
+  jobs are launched detached (`start`) and polled (`log`/`wait`); `exec` gets
+  `--timeout 86400` (the wrapper does this).
+* The runtime-proxy token cached per session lives 1 h. If the keep-alive
+  daemon dies (e.g. your terminal/container sleeps) the next command 404s and
+  the CLI *prunes* the session although the VM is still assigned and billing
+  (`colab sessions` shows it as `[?]`). `colab/run_remote.sh adopt spinice=gpu-t4`
+  re-attaches to the running kernel and restarts the daemon. Detached jobs
+  survive all of this because they are ordinary processes on the VM.

@@ -10,6 +10,7 @@
 #   colab/run_remote.sh fetch REMOTE LOCAL         # download a result file
 #   colab/run_remote.sh py "<python>"              # run python in the kernel (streams output)
 #   colab/run_remote.sh stop                       # release the VM (it is billed until you do!)
+#   colab/run_remote.sh adopt NAME=ENDPOINT_SUBSTR # re-attach orphaned VMs ("[?]" in `colab sessions`)
 #
 # Example:
 #   colab/run_remote.sh setup T4
@@ -77,6 +78,9 @@ while True:
 print('=== $NAME finished ===')"
     ;;
   fetch) "$COLAB" download -s "$SESSION" "$1" "$2" ;;
+  adopt)  # the CLI prunes sessions whose 1 h runtime token expired; the VM is usually still there
+    PY=$(dirname "$(readlink -f "$(command -v "$COLAB")")")/python
+    "$PY" "$ROOT/colab/adopt_sessions.py" "$@" ;;
   py) py "$1" ;;
   status) "$COLAB" status -s "$SESSION" ;;
   stop) "$COLAB" stop -s "$SESSION" ;;
