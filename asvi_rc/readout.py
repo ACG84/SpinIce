@@ -33,7 +33,14 @@ class RidgeReadout:
         X = np.asarray(X, dtype=float)
         y = np.asarray(y, dtype=float)
         self.mean_ = X.mean(axis=0) if self.standardise else np.zeros(X.shape[1])
-        self.std_ = X.std(axis=0) + 1e-12 if self.standardise else np.ones(X.shape[1])
+        if self.standardise:
+            std = X.std(axis=0)
+            # features that are constant on the training set (discrete microstates!) must not be
+            # blown up by a tiny divisor when they change on unseen data: leave them unscaled
+            floor = 1e-3 * max(float(np.median(std[std > 0])) if np.any(std > 0) else 1.0, 1e-12)
+            self.std_ = np.where(std > floor, std, 1.0)
+        else:
+            self.std_ = np.ones(X.shape[1])
         Xs = self._prep(X)
         if self.fit_intercept:
             Xs = np.hstack([Xs, np.ones((len(Xs), 1))])

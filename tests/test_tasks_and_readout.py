@@ -122,6 +122,15 @@ def test_ridge_recovers_linear_map():
     assert a > 0
 
 
+def test_ridge_constant_training_feature_does_not_explode():
+    rng = np.random.default_rng(1)
+    X = rng.standard_normal((60, 4))
+    X[:40, 3] = 0.0            # constant during training, active in the test set
+    y = X[:, 0] + 0.5 * X[:, 1]
+    r = readout.evaluate(X, y, n_train=40, alpha=1e-3)
+    assert r["nrmse_test"] < 0.2
+
+
 def test_mumax3_table_roundtrip(tmp_path):
     names = ["t (s)", "m.region1x ()", "m.region1y ()", "m.region1z ()", "step ()", "B_loop (T)"]
     rows = []
