@@ -179,6 +179,8 @@ def measurement_field(b_loop: float, proto: ProtocolParams, sign: float = 1.0) -
     """Signed field amplitude (along the loop axis) at which FMR is measured."""
     if proto.loop_shape == "alternating" and proto.measure_at == "loop_max":
         return sign * b_loop
+    if proto.loop_shape == "leak":
+        return proto.bias_field          # always read out at the bias field
     return b_loop if proto.measure_at == "loop_max" else proto.bias_field
 
 
@@ -195,6 +197,8 @@ def minor_loop(b_loop: float, proto: ProtocolParams, b_start: float | None = Non
     r = lambda a, b: _adaptive_ramp(a, b, proto)  # noqa: E731
     if proto.loop_shape == "alternating":
         seq = [r(b_start, sign * b_loop)]
+    elif proto.loop_shape == "leak":
+        seq = [r(b_start, +b_loop), r(+b_loop, -proto.leak_field)]
     elif proto.loop_shape == "bipolar":
         seq = [r(b_start, -b_loop), r(-b_loop, +b_loop)]
     elif proto.loop_shape == "unipolar":

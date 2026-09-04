@@ -58,11 +58,12 @@ def main(argv=None):
     ap.add_argument("--out", type=str, default="runs/reservoir")
     ap.add_argument("--b-min", type=float, default=None)
     ap.add_argument("--b-max", type=float, default=None)
-    ap.add_argument("--loop-shape", default=None, choices=["bipolar", "unipolar", "return", "alternating"])
+    ap.add_argument("--loop-shape", default=None, choices=["bipolar", "unipolar", "return", "alternating", "leak"])
     ap.add_argument("--loop-angle", type=float, default=None)
     ap.add_argument("--loop-step", type=float, default=None)
     ap.add_argument("--coarse-step", type=float, default=None, help="larger increment used while |B| < --coarse-below")
     ap.add_argument("--coarse-below", type=float, default=None)
+    ap.add_argument("--leak-field", type=float, default=None, help="reset field magnitude for --loop-shape leak")
     ap.add_argument("--measure-at", default=None, choices=["loop_max", "bias"])
     ap.add_argument("--robust", action="store_true", help="use relax() instead of minimize() in loops")
     ap.add_argument("--resume", action="store_true")
@@ -79,6 +80,7 @@ def main(argv=None):
     if a.loop_step: proto.loop_step = a.loop_step
     if a.coarse_step: proto.coarse_step = a.coarse_step
     if a.coarse_below is not None: proto.coarse_below = a.coarse_below
+    if a.leak_field is not None: proto.leak_field = a.leak_field
     if a.measure_at: proto.measure_at = a.measure_at
 
     out = Path(a.out)

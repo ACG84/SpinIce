@@ -68,11 +68,12 @@ def main(argv=None):
     r.add_argument("--n", type=int, default=400)
     r.add_argument("--b-min", type=float, default=None)
     r.add_argument("--b-max", type=float, default=None)
-    r.add_argument("--loop-shape", default=None, choices=["bipolar", "unipolar", "return", "alternating"])
+    r.add_argument("--loop-shape", default=None, choices=["bipolar", "unipolar", "return", "alternating", "leak"])
     r.add_argument("--loop-angle", type=float, default=None)
     r.add_argument("--loop-step", type=float, default=None)
     r.add_argument("--coarse-step", type=float, default=None, help="larger increment used while |B| < --coarse-below")
     r.add_argument("--coarse-below", type=float, default=None)
+    r.add_argument("--leak-field", type=float, default=None, help="reset field magnitude for --loop-shape leak")
     r.add_argument("--measure-at", default=None, choices=["loop_max", "bias"])
     r.add_argument("--minimizer", default="Minimize", choices=["Minimize", "Relax"])
     r.add_argument("--save-states", action="store_true", help="SaveAs(m) after every step")
@@ -100,6 +101,7 @@ def main(argv=None):
         if a.loop_step: proto.loop_step = a.loop_step
     if a.coarse_step: proto.coarse_step = a.coarse_step
     if a.coarse_below is not None: proto.coarse_below = a.coarse_below
+    if a.leak_field is not None: proto.leak_field = a.leak_field
         if a.measure_at: proto.measure_at = a.measure_at
         u, y = tasks.make_task(a.task, a.n)
         script = write_reservoir_script(p, proto, u, out, islands, minimizer=a.minimizer,

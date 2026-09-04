@@ -63,6 +63,19 @@ def test_alternating_protocol():
     assert s2[1]["b_meas"] == pytest.approx(-pr2.b_max)
 
 
+def test_leak_protocol():
+    pr = ProtocolParams(loop_shape="leak", leak_field=30e-3, bias_field=-1.2e-3, loop_step=2e-3)
+    sched = tasks.field_schedule(np.array([0.3, 1.0, 0.0]), pr)
+    for s in sched:
+        assert s["b_meas"] == pytest.approx(-1.2e-3) and s["ramp"][-1] == pytest.approx(-1.2e-3)
+        assert s["ramp"].max() == pytest.approx(s["b_loop"])
+    for s in sched[1:]:                      # step 0 starts with the approach from -B_sat
+        assert s["ramp"].min() == pytest.approx(-30e-3)
+        # order: up to +B, down through -leak, back to bias
+        i_max, i_min = np.argmax(s["ramp"]), np.argmin(s["ramp"])
+        assert i_max < i_min < len(s["ramp"]) - 1
+
+
 def test_field_schedule_continuity():
     pr = ProtocolParams()
     u = np.linspace(0, 1, 5)
