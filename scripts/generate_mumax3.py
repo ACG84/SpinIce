@@ -74,6 +74,7 @@ def main(argv=None):
     r.add_argument("--coarse-step", type=float, default=None, help="larger increment used while |B| < --coarse-below")
     r.add_argument("--coarse-below", type=float, default=None)
     r.add_argument("--leak-field", type=float, default=None, help="mean reset field magnitude for --loop-shape leak")
+    r.add_argument("--bias-field", type=float, default=None, help="readout field (T) for --measure-at bias / leak")
     r.add_argument("--leak-jitter", type=float, default=None, help="half-width of the random leak window")
     r.add_argument("--leak-seed", type=int, default=None)
     r.add_argument("--measure-at", default=None, choices=["loop_max", "bias"])
@@ -104,6 +105,7 @@ def main(argv=None):
     if a.coarse_step: proto.coarse_step = a.coarse_step
     if a.coarse_below is not None: proto.coarse_below = a.coarse_below
     if a.leak_field is not None: proto.leak_field = a.leak_field
+    if a.bias_field is not None: proto.bias_field = a.bias_field
     if a.leak_jitter is not None: proto.leak_jitter = a.leak_jitter
     if a.leak_seed is not None: proto.leak_seed = a.leak_seed
         if a.measure_at: proto.measure_at = a.measure_at
