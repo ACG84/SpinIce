@@ -49,6 +49,11 @@ def main(argv=None):
     ap.add_argument("--cell-z", type=float, default=5e-9)
     ap.add_argument("--box", type=float, nargs=2, default=(640e-9, 320e-9), help="single-island box (m)")
     ap.add_argument("--disorder", type=float, default=0.0)
+    ap.add_argument("--spacer", type=float, default=None, help="Al spacer thickness (m), default 35e-9")
+    ap.add_argument("--width", type=float, default=None, help="island width (m), default 140e-9")
+    ap.add_argument("--length", type=float, default=None, help="island length (m), default 550e-9")
+    ap.add_argument("--t-top", type=float, default=None, help="top NiFe thickness (m), default 20e-9")
+    ap.add_argument("--t-bottom", type=float, default=None, help="bottom NiFe thickness (m), default 30e-9")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--bias", type=float, nargs=2, default=(0.0, 0.0), help="applied field Bx By (T)")
     ap.add_argument("--fast", action="store_true", help="minimize() instead of relax()")
@@ -65,6 +70,10 @@ def main(argv=None):
     a = ap.parse_args(argv)
 
     p = ASVIParams(cell_xy=a.cell_xy, cell_z=a.cell_z, disorder_sigma=a.disorder, seed=a.seed)
+    for attr, val in (("t_spacer", a.spacer), ("width", a.width), ("length", a.length),
+                      ("t_top", a.t_top), ("t_bottom", a.t_bottom)):
+        if val is not None:
+            setattr(p, attr, val)
     if a.unit == "single":
         p.box_override = tuple(a.box)
         p.pbc_repetitions = (0, 0, 0)
