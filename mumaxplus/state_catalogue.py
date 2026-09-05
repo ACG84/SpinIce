@@ -45,6 +45,10 @@ def seed_state(p, sim, labels):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--unit", choices=["single", "cell"], default="single")
+    ap.add_argument("--n-cells", type=int, nargs=2, default=(1, 1), help="PBC supercell in unit cells (unit=cell)")
+    ap.add_argument("--closure-only", action="store_true",
+                    help="skip the 4^N enumeration: seed only ground/saturated/antiparallel patterns and let "
+                         "--transitions discover the accessible states")
     ap.add_argument("--cell-xy", type=float, default=10e-9)
     ap.add_argument("--cell-z", type=float, default=5e-9)
     ap.add_argument("--box", type=float, nargs=2, default=(640e-9, 320e-9), help="single-island box (m)")
@@ -79,14 +83,21 @@ def main(argv=None):
         p.pbc_repetitions = (0, 0, 0)
         islands = single_island(p)
     else:
-        p.n_cells = (1, 1)
+        p.n_cells = tuple(a.n_cells)
         islands = build_islands(p)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     sim = ASVISimulation(p, islands=islands, verbose=False)
     print(describe(p, sim.islands), flush=True)
     sim.set_field((a.bias[0], a.bias[1], 0.0))
 
-    combos = list(itertools.product(STATES, repeat=len(sim.islands)))
+    if a.closure_only:
+        n = len(sim.islands)
+        combos = [tuple("+" * n), tuple("-" * n),
+                  tuple("+-" * (n // 2)), tuple("-+" * (n // 2)),          # antiparallel stacks
+                  tuple(("+-" if (i // 2) % 2 == 0 else "-+")[i % 2] for i in range(n))]  # alternating islands
+        combos = list(dict.fromkeys(combos))
+    else:
+        combos = list(itertools.product(STATES, repeat=len(sim.islands)))
     if a.max_states:
         combos = combos[:a.max_states]
     rows = []
