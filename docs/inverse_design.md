@@ -76,7 +76,32 @@ level at least `--min-level` (default 5 aJ) above the ground state so the
 optimiser cannot make a vortex the new ground state.  Cost: one relaxation
 per tracked state per step, ~40-60 s per step at 10 nm on 4 cores.
 
-DEMO_TABLE
+Demo: `--design width t_spacer --objective reorder --steps 8` (10 nm cells, 683 s):
+
+| step | width (nm) | spacer (nm) | levels +/+, +/V+, +/V-, V+/-, V+/+ (aJ) | B_reorder (mT) | mean B (mT) |
+|---|---|---|---|---|---|
+| 0 | 140 | 35.0 | 27.4, 25.2, 29.9, -, 36.7 | 8.3, 12.8, 15.1, -, 23.9 | 15.1 |
+| 2 | 160 | 35.6 | 33.1, 23.3, 27.8, 25.6, 29.7 | 9.1, 10.5, 12.6, 17.3, 18.4 | 13.6 |
+| 4 | 180 | 36.3 | 38.7, 21.1, 25.4, 19.4, 23.5 | 9.7, 8.8, 10.7, 11.7, 13.2 | 10.9 |
+| 6 | 200 | 37.3 | 44.0, 19.2, 23.4, 13.6, 17.5 | 10.3, 7.6, 9.1, 7.5, 9.1 | 8.7 |
+| 8 | 220 | 38.5 | 48.7, 17.8, 21.1, 8.0, 11.2 | 10.8, 6.5, 7.9, 4.0, 5.7 | 7.0 |
+
+* Step 0 reproduces the mumax+ catalogue analysis of the nominal island
+  (8.4 / 12.8 / 15.2 / 22.0 / 24.8 mT at 5 nm cells), so the soft model and the
+  reordering-field definition are consistent with the GPU pipeline.  (V+/- did
+  not survive its seed at step 0 in the soft model and joins from step 1.)
+* The gradient is dominated by the width (spacer barely moves in normalised
+  units): widening the island lowers every vortex level and their reordering
+  fields (V+/+ 23.9 -> 5.7 mT), while the parallel macrospin state gets more
+  expensive (27 -> 49 aJ) but its reordering field only creeps up (8.3 -> 10.8
+  mT) because its moment difference grows with the width too.
+* The loop would keep widening until the vortex levels hit the 5 aJ floor
+  (V+/- is at 8 aJ at 220 nm): the "optimum" of this objective is an island on
+  the verge of preferring vortices, which is exactly where the level structure
+  is most clustered and the reordering fields smallest, but also where the
+  macrospin bits stop being robust.  The width bound / level floor are the
+  real design constraints; a switching-field (barrier) term is the missing
+  ingredient (see below).
 
 ## What to do with it
 
