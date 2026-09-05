@@ -20,8 +20,9 @@ different from the ground state's):
 A penalty keeps every level at least --min-level above the ground state, so the
 optimiser cannot "win" by turning a vortex state into the new ground state, and a
 step that makes a previously stable state collapse is rejected and retried with
-half the step (up to --backtrack times): the objective is only defined while all
-tracked states exist, so state loss is treated as leaving the feasible region.
+half the step (up to --backtrack times); if the state still collapses the run
+stops at the feasibility boundary and the last accepted design is the answer.
+The objective is only defined while all tracked states exist.
 
     python scripts/inverse_design.py --design width t_spacer --objective reorder --steps 15 --out runs/invdes
 """
@@ -120,6 +121,13 @@ def main(argv=None):
             E[lab] = sim.energy_tensor()
             M[lab] = (sim.moment() * axis).sum()
         lost = [lab for lab in states if last is not None and last[2][lab] and not ok[lab]]
+        if lost and halvings >= a.backtrack:
+            print(f"stopping at the feasibility boundary: {','.join('/'.join(l) for l in lost)} collapses for any "
+                  f"step > 1/{2 ** halvings} of the gradient step; last accepted design: "
+                  + "  ".join(f"{k}={last[0][k] * FMT[k]:.4g}" for k in free), flush=True)
+            history[-1]["feasibility_boundary"] = True
+            (out / "history.json").write_text(json.dumps(history, indent=1))
+            break
         if lost and halvings < a.backtrack:
             halvings += 1
             print(f"        step rejected: {','.join('/'.join(l) for l in lost)} collapsed; retrying with step/{2 ** halvings}",
