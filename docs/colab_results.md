@@ -86,3 +86,60 @@ washout, ridge parameter chosen on a validation slice of the training data.
 
 Minimisation count per input: 64 (symmetric ±34 mT loop, 2 mT steps),
 42 with adaptive stepping (6 mT below 26 mT), ~20 for unipolar/alternating.
+
+## Random-leak protocol runs (Sep 4-5)
+
+| run | GPU | system | protocol | task | steps | result |
+|---|---|---|---|---|---|---|
+| leak0 | A100 | 2x2, 8 % disorder | unipolar write + random leak 28-38 mT, readout at -1.2 mT | MG t+10 | 80 (stopped) | readout blind: at -1.2 mT a reversed macrospin has the same Kittel frequency (R² of current input ~0) |
+| leak0b | A100 | 2x2, 8 % disorder | same, readout at -20 mT | MG t+10 | 100 (stopped) | 19 discrete states, 28/30 test steps in states unseen in training, new states keep appearing (y-islands drift); no usable prediction |
+| leak45 | A100 | 2x2, 8 % disorder | field at 45 deg, window 31-47 mT, random leak, readout -20 mT | MG t+10 | ~60 of 100, VM lost | 9 states in the first 20 steps, then long constant stretches (array resets only on the 45 mT avalanche) |
+
+![leak0b](figures/a100_leak_1deg_bias20mT.png)
+
+Lessons: (i) the readout field must separate +/- macrospins spectrally (>= 20 mT); (ii) a
+fixed leak gives either infinite or zero memory per element, a random-amplitude leak gives
+per-element forgetting rates; (iii) with two or three effective thresholds the state space is
+a few bits and the ridge readout cannot generalise to unseen discrete states; (iv) elements
+that the protocol never resets (here the y-islands at 1 deg) drift into new states and break
+stationarity.
+
+## State catalogue and cell-size scan (Sep 5)
+
+`mumaxplus/state_catalogue.py` seeds every combination of layer states (+, -, V+, V-),
+relaxes, classifies and records the energy.  Isolated 3D island, field sweep along x+1 deg:
+
+| cell (nm) | nominal states stable | levels above the antiparallel ground state (aJ) | switching fields |
+|---|---|---|---|
+| 10 | 16/16 | 0.0, 26.4, 27.6, 30.7, 32.8, 36.8, 44.1, 54.7 | bottom 58; top 34 mT |
+| 8 | 16/16 | 0.0, 25.2, 28.8, 29.9, 30.2, 34.7, 40.9, 43.5 | bottom 35; top 35 mT |
+| 5 | 16/16 | 0.0, 25.7, 28.1, 30.2, 32.0, 36.2, 43.4, 45.9 | bottom 55; top 30 mT |
+| 4 | 16/16 | 0.0, 25.8, 28.6, 30.2, 32.2, 36.5, 43.9, 46.4 | bottom 56; top 28 mT |
+
+* All 16 textures are stable minima at every cell size; energies converge to ~0.5 aJ below 8 nm.
+* Switching fields need 5 nm (4 nm agrees within 2 mT); 8 nm is a grid artefact (140 nm width is
+  17.5 cells) and 10 nm overestimates the top-layer coercivity by 4-6 mT.
+* Reordering fields dE/dM (the field at which the Zeeman tilt makes a state degenerate with the
+  ground state): +/V 12.8, +/+ 8.5, +/V(opp) 15.3, V/- 22.2, V/+ 24.9 mT; double-vortex states
+  have no net moment and cannot be addressed by a uniform field. `scripts/catalogue_analysis.py`.
+* Periodic two-island unit cell at 10 nm: 252/256 seeded combinations stable, 253 distinct
+  states, 102 energy levels between 0 and 96 aJ (bands by vortex count, ~20-25 aJ per vortex),
+  ground states = antiparallel stacks in both islands.  At 5 nm: 248/256 stable (double-vortex
+  cores better resolved), otherwise identical.
+
+## Proxy pipeline (implemented, first tables pending)
+
+* `state_catalogue.py --transitions` builds the automaton T(state, +-B) by closing the state set
+  under quasi-static field excursions, with one FMR spectrum per state (`--trans-spectra`);
+  `--closure-only --n-cells 2 1` does the same for a 4-island PBC cell without enumeration.
+* `scripts/automaton_rc.py` runs any protocol/window through the table on the CPU: states
+  reachable from the ground state, largest mutually reachable core, minimal window to reach k
+  states, past-input recall and benchmark scores with the per-state spectra as features.
+* Cost per geometry candidate: catalogue at 10 nm (minutes) + table (tens of minutes at 10 nm,
+  hours at 5 nm) versus 8-15 h for a real reservoir run.
+
+## Operational note
+
+The Colab CLI keep-alive daemon runs on the client; in this remote environment client processes
+are killed between wake-ups, so long gaps without keep-alive let Colab reclaim the VM (lost at
+~02:15 UTC Sep 5 after ~2.3 h without pings).  Fetch results eagerly and keep check-ins short.
