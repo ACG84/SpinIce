@@ -18,7 +18,10 @@ different from the ground state's):
   escape   : reordering field of the *lowest* excited level only (the field
              that first lets the ground state reorder)
 A penalty keeps every level at least --min-level above the ground state, so the
-optimiser cannot "win" by turning a vortex state into the new ground state.
+optimiser cannot "win" by turning a vortex state into the new ground state, and a
+step that makes a previously stable state collapse is rejected and retried with
+half the step (up to --backtrack times): the objective is only defined while all
+tracked states exist, so state loss is treated as leaving the feasible region.
 
     python scripts/inverse_design.py --design width t_spacer --objective reorder --steps 15 --out runs/invdes
 """
@@ -70,6 +73,7 @@ def main(argv=None):
     ap.add_argument("--states", type=int, default=len(ADDRESSABLE), help="use the first N addressable states")
     ap.add_argument("--min-level", type=float, default=5e-18, help="penalise levels closer than this (J) to the ground state")
     ap.add_argument("--penalty", type=float, default=10.0, help="penalty weight per unit of (min_level - dE)/min_level")
+    ap.add_argument("--backtrack", type=int, default=3, help="halvings of a step that collapses a tracked state")
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     import torch
@@ -94,7 +98,10 @@ def main(argv=None):
     history = []
     m_prev = {}
     t0 = time.time()
-    for step in range(a.steps + 1):
+    last = None                                    # (design values, grads, ok) of the last accepted step
+    halvings = 0
+    step = 0
+    while step <= a.steps:
         sim.set_material()
         E, M, ok = {}, {}, {}
         # 1. relax every tracked state (no graph)
@@ -112,6 +119,17 @@ def main(argv=None):
             sim.set_material()
             E[lab] = sim.energy_tensor()
             M[lab] = (sim.moment() * axis).sum()
+        lost = [lab for lab in states if last is not None and last[2][lab] and not ok[lab]]
+        if lost and halvings < a.backtrack:
+            halvings += 1
+            print(f"        step rejected: {','.join('/'.join(l) for l in lost)} collapsed; retrying with step/{2 ** halvings}",
+                  flush=True)
+            with torch.no_grad():
+                for k in free:
+                    design[k].fill_(last[0][k] - (last[0][k] - float(design[k])) / 2)
+            m_prev = {lab: m for lab, m in last[3].items()}
+            continue
+        halvings = 0
         grounds = [lab for lab in GROUND if ok[lab]]
         g = min(grounds, key=lambda l: float(E[l]))
         valid = [lab for lab in states if lab not in GROUND and ok[lab]]
@@ -141,8 +159,10 @@ def main(argv=None):
               "  B " + " ".join(f"{v:.1f}" for v in rec["B_reorder_mT"].values()) +
               ("" if all(ok.values()) else "  collapsed: " + ",".join("/".join(l) for l in states if not ok[l])) +
               f"  ({time.time() - t0:.0f} s)", flush=True)
+        last = ({k: float(design[k]) for k in free}, grads, dict(ok), dict(m_prev))
         if step == a.steps:
             break
+        step += 1
         # 3. normalised gradient step with bounds (each parameter moves at most lr*SCALE)
         gn = max(abs(grads[k]) * SCALE[k] for k in free) or 1.0
         with torch.no_grad():
