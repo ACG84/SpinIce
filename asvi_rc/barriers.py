@@ -31,16 +31,24 @@ def _normalize(sim, m):
     return m
 
 
-def _bb_steps(mn, state, m, k, tau, tau_min=1e-13, tau_max=1e-5):
-    """k Barzilai-Borwein midpoint steps from m; returns (m, tau, |torque|_max)."""
-    import torch
+def _field(mn, state, m, tangent=None):
+    """Effective field at m; with a (unit) path tangent the component along it is reversed,
+    which turns descent into the climbing-image saddle search."""
     state.m = m
     h = mn.h(state)
+    if tangent is not None:
+        h = h - 2 * (h * tangent).sum() * tangent
+    return h
+
+
+def _bb_steps(mn, state, m, k, tau, tau_min=1e-13, tau_max=2e-6, tangent=None):
+    """k Barzilai-Borwein midpoint steps from m; returns (m, tau, |torque|_max)."""
+    import torch
+    h = _field(mn, state, m, tangent)
     dm = torch.linalg.cross(m, torch.linalg.cross(m, h))
     for i in range(k):
         m_new = mn._midpoint(m, h, tau)
-        state.m = m_new
-        h_new = mn.h(state)
+        h_new = _field(mn, state, m_new, tangent)
         dm_new = torch.linalg.cross(m_new, torch.linalg.cross(m_new, h_new))
         s, y = m_new - m, dm_new - dm
         num, den = ((s * s).sum(), (s * y).sum()) if i % 2 == 0 else ((s * y).sum(), (y * y).sum())
@@ -70,12 +78,24 @@ def _reparametrise(sim, images):
     return out
 
 
-def string_barrier(sim, m_a: np.ndarray, m_b: np.ndarray, n_images: int = 16, n_iter: int = 80,
-                   sub_steps: int = 4, tol_J: float = 2e-21, verbose: bool = False) -> dict:
+def _tangent(images, i):
+    t = images[i + 1] - images[i - 1]
+    return t / t.norm().clamp(min=1e-30)
+
+
+def string_barrier(sim, m_a: np.ndarray, m_b: np.ndarray, n_images: int = 16, n_iter: int = 150,
+                   sub_steps: int = 4, tol_J: float = 2e-20, n_climb: int = 60, tau_max: float = 2e-6,
+                   verbose: bool = False) -> dict:
     """Minimum-energy path between two relaxed states m_a, m_b (numpy (3, nz, ny, nx)).
 
+    After the string has converged (max energy change < tol_J on 3 consecutive
+    iterations, or n_iter), the highest image climbs to the saddle (n_climb
+    climbing-image iterations with the force along the path tangent reversed), so
+    the returned m_saddle is a stationary point and the envelope theorem applies.
+
     Returns dict(energies (J, per image), images (numpy), i_saddle, m_saddle,
-    barrier_J = E_saddle - E_a, barrier_back_J = E_saddle - E_b, iterations, seconds).
+    barrier_J = E_saddle - E_a, barrier_back_J = E_saddle - E_b, iterations,
+    climb_torque (max |m x (m x h)| at the saddle, A/m), seconds).
     """
     torch, mnp = sim.torch, sim.mnp
     mn = mnp.MinimizerBB(sim.terms)
@@ -90,7 +110,7 @@ def string_barrier(sim, m_a: np.ndarray, m_b: np.ndarray, n_images: int = 16, n_
         stable = 0
         for it in range(n_iter):
             for i in range(1, n_images - 1):
-                images[i], taus[i], _ = _bb_steps(mn, state, images[i], sub_steps, taus[i])
+                images[i], taus[i], _ = _bb_steps(mn, state, images[i], sub_steps, taus[i], tau_max=tau_max)
             images = _reparametrise(sim, images)
             E = []
             for img in images:
@@ -104,9 +124,18 @@ def string_barrier(sim, m_a: np.ndarray, m_b: np.ndarray, n_images: int = 16, n_
             stable = stable + 1 if change < tol_J else 0
             if stable >= 3:
                 break
-        i_s = int(np.argmax(E))
+        i_s = int(np.argmax(E[1:-1])) + 1
+        # climbing image: the highest interior image ascends along the path tangent, descends elsewhere
+        tau_c, torque = 1e-13, np.inf
+        for ic in range(n_climb):
+            tang = _tangent(images, i_s)
+            images[i_s], tau_c, torque = _bb_steps(mn, state, images[i_s], sub_steps, tau_c, tau_max=tau_max, tangent=tang)
+            state.m = images[i_s]
+            E[i_s] = float(mn.E(state))
+            if verbose and ic % 10 == 0:
+                print(f"  climb it {ic:3d}: barrier {(E[i_s] - E[0]) * 1e18:8.3f} aJ  torque {torque:.3g} A/m", flush=True)
         state.m = images[i_s]
     imgs_np = [img.detach().cpu().numpy().transpose(3, 2, 1, 0).copy() for img in images]
     return {"energies": E, "images": imgs_np, "i_saddle": i_s, "m_saddle": imgs_np[i_s],
             "barrier_J": float(E[i_s] - E[0]), "barrier_back_J": float(E[i_s] - E[-1]),
-            "iterations": it + 1, "seconds": time.time() - t0}
+            "iterations": it + 1, "climb_torque": torque, "seconds": time.time() - t0}

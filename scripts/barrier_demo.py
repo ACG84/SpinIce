@@ -44,7 +44,7 @@ def main(argv=None):
     ap.add_argument("--cell-xy", type=float, default=10e-9)
     ap.add_argument("--fields", type=float, nargs="+", default=[0.0], help="applied fields along +x (T)")
     ap.add_argument("--images", type=int, default=16)
-    ap.add_argument("--iters", type=int, default=80)
+    ap.add_argument("--iters", type=int, default=150)
     ap.add_argument("--fd", type=str, default=None, help="finite-difference check of the barrier gradient for this parameter")
     ap.add_argument("--fd-h", type=float, default=2e-9)
     ap.add_argument("--verbose", action="store_true")
@@ -73,7 +73,7 @@ def main(argv=None):
         rows.append(row)
         print(f"B = {b * 1e3:5.1f} mT: barrier AP->P {row['barrier_aJ']:7.3f} aJ (back {row['barrier_back_aJ']:7.3f}), "
               f"dE(P-AP) {row['dE_P_minus_AP_aJ']:7.3f} aJ, saddle image {res['i_saddle']}/{a.images - 1}, "
-              f"{res['iterations']} its, {row['seconds']:.0f} s", flush=True)
+              f"{res['iterations']} its, saddle torque {res['climb_torque']:.3g} A/m, {row['seconds']:.0f} s", flush=True)
         print("   d(barrier)/d: " + "  ".join(f"{k} {v * 1e18 * 1e-9:+.3f} aJ/nm" for k, v in grad.items()), flush=True)
         print("   path (aJ): " + " ".join(f"{x:.1f}" for x in row["path_aJ"]), flush=True)
     if a.fd:
