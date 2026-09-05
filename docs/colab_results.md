@@ -127,7 +127,59 @@ relaxes, classifies and records the energy.  Isolated 3D island, field sweep alo
   ground states = antiparallel stacks in both islands.  At 5 nm: 248/256 stable (double-vortex
   cores better resolved), otherwise identical.
 
-## Proxy pipeline (implemented, first tables pending)
+## Proxy pipeline: first transition tables (Sep 5, free T4)
+
+Periodic two-island unit cell (10 nm cells, 4x4 PBC images), bias -20 mT, excursions bias -> +-B
+-> bias with B = 24..56 mT in 8 mT steps (`--closure-only`, no spectra; ~1 min per state row on a
+T4).  The closure starts from the five zero-field seeds (AP, P and mixed stacks):
+
+| axis | states in closure | window 24-56: reachable from ground / mutually reachable core / edges | window 28-38 | window 31-47 |
+|---|---|---|---|---|
+| 1 deg | 15 | 3 / 4 / 20 | 2 / 1 / 3 | 2 / 1 / 9 |
+| 45 deg | 11 | 11 / 5 / 18 | 1 / 1 / 0 | 3 / 1 / 4 |
+
+* The antiparallel ground state (+/-/+/-) is a fixed point of every 45 deg excursion up to 56 mT and
+  of every 1 deg excursion up to 48 mT.  Once the cell relaxes into it the protocol cannot leave it:
+  the CPU automaton with the leak protocol (31-47 mT, leak 39+-8 mT) sits in the ground state 98 %
+  of the time, visits 3 of 11 states, and scores NRMSE 1.0 on Mackey-Glass with zero memory.
+* The 45 deg table is a hierarchy of sinks: saturated and parallel stacks cascade toward the ground
+  state; the best window (40-48 mT) reaches 8 states but only 2 are mutually reachable.
+* The 1 deg table has its own absorbing states (+/-/+/+, +/-/-/-, -/+/-/-, all-vortex), which is
+  the discrete few-bit behaviour seen in the real reservoir runs.
+* So the quantity to design against is the escape field of the ground state, i.e. the reordering
+  field of the lowest level, which is above the whole protocol window.  Caveat: the 8 mT amplitude
+  grid is coarse (the 28-38 window contains one sample); a 4 mT grid over 30-56 mT is the next step.
+
+## Spacer scan (Sep 5, free T4)
+
+Isolated island, 5 nm cells, energies relative to the antiparallel ground state, reordering field
+dE/dM, and switching fields from the x+1 deg sweep (`scripts/catalogue_analysis.py`,
+`scripts/switching_fields.py`).  The 70 nm spacer and the width scan (180, 220 nm) were lost with
+the VM.
+
+| level | 25 nm | 35 nm (paper) | 50 nm |
+|---|---|---|---|
+| +/+ parallel (aJ) | 31.7 | 28.1 | 23.9 |
+| +/V+ (aJ) | 27.0 | 25.7 | 23.9 |
+| +/V- (aJ) | 32.4 | 30.2 | 27.5 |
+| V+/- (aJ) | 33.3 | 32.0 | 30.3 |
+| V+/+ (aJ) | 38.3 | 36.2 | 33.7 |
+| V+/V-, V+/V+ (aJ) | 43.9, 45.6 | 43.4, 45.9 | 42.4, 45.4 |
+| B_reorder: +/+, +/V+, +/V-, V+/-, V+/+ (mT) | 9.6, 13.8, 16.5, 23.6, 26.3 | 8.4, 12.8, 15.2, 22.0, 24.8 | 7.1, 11.7, 13.6, 20.2, 22.6 |
+| switching top / bottom (mT) | 28 / 58 | 30 / 55 | 31 / 52 |
+
+* Monotonic: a thicker spacer weakens the interlayer dipolar coupling, lowers the parallel-state
+  cost by ~4 aJ per 15 nm and every field-addressable reordering field by ~1.5 mT.
+* At 50 nm the parallel and single-vortex levels are degenerate (23.9 aJ), the first sign of the
+  clustered level structure the proxy asks for, and the two layers' switching fields converge
+  (52 vs 31 mT instead of 55 vs 30).  Double-vortex levels are spacer independent (no net moment).
+* All 16 textures stay stable at every spacer; the level ordering is unchanged.
+
+### Tools
+
+The tables and catalogues behind the numbers above are in `docs/data/<run>/` (a few kB each), so
+`scripts/automaton_rc.py docs/data/trans_cell_10_45deg/transitions.json ...` and
+`scripts/catalogue_analysis.py docs/data/scan_sp50/catalogue.json --window 5 40` re-run without a GPU.
 
 * `state_catalogue.py --transitions` builds the automaton T(state, +-B) by closing the state set
   under quasi-static field excursions, with one FMR spectrum per state (`--trans-spectra`);
@@ -135,11 +187,14 @@ relaxes, classifies and records the energy.  Isolated 3D island, field sweep alo
 * `scripts/automaton_rc.py` runs any protocol/window through the table on the CPU: states
   reachable from the ground state, largest mutually reachable core, minimal window to reach k
   states, past-input recall and benchmark scores with the per-state spectra as features.
-* Cost per geometry candidate: catalogue at 10 nm (minutes) + table (tens of minutes at 10 nm,
-  hours at 5 nm) versus 8-15 h for a real reservoir run.
+* Cost per geometry candidate: catalogue at 10 nm (minutes) + table (14 min for 11-15 states at
+  10 nm on a T4, hours at 5 nm; FMR spectra add ~4 min per state on a T4) versus 8-15 h for a
+  real reservoir run.  A single-island 5 nm catalogue with hysteresis sweep is 10-17 min on a T4.
 
 ## Operational note
 
 The Colab CLI keep-alive daemon runs on the client; in this remote environment client processes
 are killed between wake-ups, so long gaps without keep-alive let Colab reclaim the VM (lost at
 ~02:15 UTC Sep 5 after ~2.3 h without pings).  Fetch results eagerly and keep check-ins short.
+Free-tier T4s are reclaimed after roughly 2 h regardless of keep-alive (16:09-18:00 UTC Sep 5):
+order jobs by value, checkpoint tables after every row, and fetch at every check-in.
