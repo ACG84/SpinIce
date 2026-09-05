@@ -71,7 +71,7 @@ class SoftGeometry:
         torch, _ = _import_magnumnp()
         self.p, self.islands, self.design = p, islands, design
         self.eps = p.cell_xy / 2 if eps is None else eps
-        self.eps_z = p.cell_z if eps_z is None else eps_z
+        self.eps_z = p.cell_z / 2 if eps_z is None else eps_z
         nx, ny, nz = p.grid
         x = (torch.arange(nx, dtype=torch.float64, device=device) + 0.5) * p.cell_xy
         y = (torch.arange(ny, dtype=torch.float64, device=device) + 0.5) * p.cell_xy
