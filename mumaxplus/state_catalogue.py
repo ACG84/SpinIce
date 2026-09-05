@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from asvi_rc import ASVIParams                                                  # noqa: E402
 from asvi_rc.geometry import (build_islands, single_island, macrospin_magnetization,   # noqa: E402
                               vortex_magnetization, classify_layer, describe)
-from asvi_rc.mumaxplus_driver import ASVISimulation                             # noqa: E402
+from asvi_rc.backend import make_simulation, BACKENDS                           # noqa: E402
 
 STATES = ("+", "-", "V+", "V-")
 
@@ -70,6 +70,8 @@ def main(argv=None):
     ap.add_argument("--trans-bias", type=float, default=-20e-3, help="readout field along the axis (T)")
     ap.add_argument("--trans-step", type=float, default=8e-3, help="quasi-static ramp increment (T)")
     ap.add_argument("--trans-spectra", action="store_true", help="also record one FMR spectrum per state at the bias field")
+    ap.add_argument("--backend", choices=BACKENDS, default="mumaxplus",
+                    help="mumaxplus (CUDA) or magnumnp (PyTorch; runs on the CPU)")
     ap.add_argument("--out", type=str, required=True)
     a = ap.parse_args(argv)
 
@@ -86,7 +88,7 @@ def main(argv=None):
         p.n_cells = tuple(a.n_cells)
         islands = build_islands(p)
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    sim = ASVISimulation(p, islands=islands, verbose=False)
+    sim = make_simulation(p, islands, a.backend, verbose=False)
     print(describe(p, sim.islands), flush=True)
     sim.set_field((a.bias[0], a.bias[1], 0.0))
 
