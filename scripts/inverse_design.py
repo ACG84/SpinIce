@@ -17,6 +17,9 @@ different from the ground state's):
              (the same definition as scripts/catalogue_analysis.py)
   escape   : reordering field of the *lowest* excited level only (the field
              that first lets the ground state reorder)
+  memory   : memory capacity of the soft automaton built on all 16 states
+             (asvi_rc.softautomaton; --protocol sets the field stages), i.e. a
+             differentiable memory-curve proxy; maximised (J = -MC)
 A penalty keeps every level at least --min-level above the ground state, so the
 optimiser cannot "win" by turning a vortex state into the new ground state, and a
 step that makes a previously stable state collapse is rejected and retried with
@@ -38,9 +41,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from asvi_rc import ASVIParams                                                  # noqa: E402
 from asvi_rc.geometry import single_island, macrospin_magnetization, vortex_magnetization, classify_layer  # noqa: E402
 from asvi_rc.magnumnp_driver import ASVISimulationNP, DESIGN_KEYS               # noqa: E402
+from asvi_rc.softautomaton import memory_proxy, leak_stages, unipolar_stages     # noqa: E402
 
 GROUND = [("+", "-"), ("-", "+")]                    # degenerate antiparallel ground states
 ADDRESSABLE = [("+", "+"), ("+", "V+"), ("+", "V-"), ("V+", "-"), ("V+", "+")]
+LABELS = ("+", "-", "V+", "V-")
+ALL_STATES = [(a, b) for a in LABELS for b in LABELS]  # the full 16-state single-island automaton
 SCALE = {"length": 100e-9, "width": 20e-9, "t_bottom": 5e-9, "t_spacer": 5e-9, "t_top": 5e-9,
          "offset_x": 20e-9, "offset_y": 20e-9, "msat_bottom": 100e3, "msat_top": 100e3, "aex": 2e-12}
 BOUNDS = {"length": (350e-9, 700e-9), "width": (90e-9, 240e-9), "t_bottom": (10e-9, 45e-9),
@@ -63,7 +69,12 @@ def seed(p, sim, labels):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--design", nargs="+", default=["width", "t_spacer"], choices=DESIGN_KEYS)
-    ap.add_argument("--objective", choices=["spread", "reorder", "escape"], default="reorder")
+    ap.add_argument("--objective", choices=["spread", "reorder", "escape", "memory"], default="reorder")
+    ap.add_argument("--all-states", action="store_true", help="track all 16 layer-state combinations")
+    ap.add_argument("--protocol", nargs=5, type=float, default=(24.3e-3, 30.4e-3, 34e-3, 1.5e-3, -27e-3),
+                    metavar=("B_MIN", "B_MAX", "LEAK", "JITTER", "BIAS"), help="leak-protocol fields (T) for --objective memory")
+    ap.add_argument("--barrier", type=float, default=70e-18, help="soft-automaton switching barrier (J)")
+    ap.add_argument("--width", type=float, default=2e-3, help="soft-automaton switching width (T)")
     ap.add_argument("--steps", type=int, default=10)
     ap.add_argument("--lr", type=float, default=0.5, help="max change per step in units of SCALE[param]")
     ap.add_argument("--cell-xy", type=float, default=10e-9)
@@ -92,7 +103,7 @@ def main(argv=None):
     islands = single_island(p)
     design = {k: torch.tensor(nominal[k], dtype=torch.float64, requires_grad=True) for k in DESIGN_KEYS}
     free = list(a.design)
-    states = GROUND + ADDRESSABLE[: a.states]
+    states = ALL_STATES if (a.all_states or a.objective == "memory") else GROUND + ADDRESSABLE[: a.states]
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     sim = ASVISimulationNP(p, islands, verbose=False, design=design)
     axis = torch.tensor([*islands[0].axis, 0.0], dtype=torch.float64)
@@ -149,6 +160,13 @@ def main(argv=None):
             J = torch.stack([dE[l] for l in valid]).std() * 1e18
         elif a.objective == "reorder":
             J = torch.stack([B[l] for l in valid]).mean() * 1e3
+        elif a.objective == "memory":
+            alive = [lab for lab in states if ok[lab]]
+            mc, r2, _ = memory_proxy(torch.stack([E[l] for l in alive]), torch.stack([M[l] for l in alive]), alive,
+                                     stages=leak_stages(*a.protocol), barrier=a.barrier, width=a.width)
+            J = -mc
+            print(f"        MC {float(mc):.3f}  R2 {' '.join(f'{x:.2f}' for x in r2.detach().numpy())}  "
+                  f"({len(alive)} states alive)", flush=True)
         else:
             low = min(valid, key=lambda l: float(dE[l]))
             J = B[low] * 1e3

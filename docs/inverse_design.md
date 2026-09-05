@@ -174,6 +174,50 @@ The physical picture is useful even now: the top layer reverses through
 vortex nucleation, so the switching barrier and the +/V+ level are the same
 physics, which is why widening the island lowered both in the reorder run.
 
+## Memory-curve proxy: a differentiable soft automaton (`asvi_rc/softautomaton.py`)
+
+The GPU transition tables showed the reservoir is a finite automaton on the
+relaxed states driven by the loop amplitude, and that its memory is set by
+which transitions the protocol can reach.  The proxy makes that automaton
+smooth and differentiable using only quantities the design model provides:
+
+* states i with energies E_i and axis moments M_i (from the relaxations, with
+  design gradients by the envelope theorem);
+* single-layer transitions i -> j with probability
+  p_ij(B) = sigmoid((dM B - dE - barrier) / (|dM| width)), i.e. the Zeeman gain
+  of the switch must exceed an effective barrier (70 aJ, calibrated so the
+  nominal top layer switches at 29.7 mT vs 30 mT measured) with a 2 mT
+  switching width; a few cascade rounds per field stage;
+* the state-probability vector rho_t propagated through the field stages of
+  each protocol step (leak excursion, write excursion, bias), a ridge readout
+  of u(t-k) from rho_t, test R^2(k), and MC = sum_k R^2(k) (smoothly clamped).
+
+Everything is a torch expression, so dMC/d(design) and dMC/d(protocol) come
+from one backward pass.  On the nominal island it reproduces the GPU findings
+qualitatively: with the original protocol (28-38 mT, leak 33+-5, bias -20) the
+automaton visits ~1.4 bits of its 16 states and recalls only the current input
+(MC 0.56, R^2(1) ~ 0).  `tests/test_softautomaton.py` covers it.
+
+### Protocol optimisation on a fixed landscape (`scripts/protocol_design.py`, ~1 s per step)
+
+| protocol | free parameters | start MC | optimised MC | R^2(k = 0..3) | optimised fields (mT) |
+|---|---|---|---|---|---|
+| leak | b_min, b_max, leak, jitter, bias | 0.56 | 2.08 | 0.95, 0.90, 0.06, 0.00 | window 25.2-29.9, leak 33.4 +- 1.2, bias -26.8 |
+| unipolar | b_min, b_max, bias | 0.55 | 1.20 | 0.53, 0.24, 0.12, 0.08 | window 35.7-36.8, bias -18.3 |
+
+* The leak protocol turns into a one-step memory: the write window straddles
+  the top-layer switching field so u_t decides whether the layer switched,
+  and the deepened bias makes the reset conditional on the previous state
+  (occupancy 2.25 bits).  The unipolar protocol finds a slower-decaying curve
+  instead.  Two different memory shapes from the same 16-state landscape,
+  found in 30 gradient steps each.
+* Caveats: one island driven along its own axis (the lattice and the 45 deg
+  axis are the next step, same code with the unit-cell catalogue); the barrier
+  is a single calibrated constant until the string-method barriers converge;
+  the readout uses state probabilities, whereas the real readout is the FMR
+  spectrum, which is a further (state -> spectrum) map that the GPU tables
+  showed to be injective enough on the visited states.
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
