@@ -103,6 +103,39 @@ Demo: `--design width t_spacer --objective reorder --steps 8` (10 nm cells, 683 
   real design constraints; a switching-field (barrier) term is the missing
   ingredient (see below).
 
+## Escape-field run: the optimum is a feasibility boundary
+
+`--design width t_spacer t_top offset_y --objective escape --steps 10` (four
+parameters, 21 min).  The objective is the reordering field of the lowest
+level, i.e. the field at which the antiparallel ground state first becomes
+degenerate with an excited level: the direct handle on the sink seen in the
+transition tables.
+
+| step | width (nm) | spacer (nm) | t_top (nm) | offset (nm) | levels +/+, +/V+, +/V-, V+/-, V+/+ (aJ) | B_reorder (mT) | escape (mT) |
+|---|---|---|---|---|---|---|---|
+| 0 | 140 | 35.0 | 20.0 | 50.0 | 27.4, 25.2, 29.9, -, 36.7 | 8.3, 12.8, 15.1, -, 23.9 | 12.8 |
+| 2 | 149.7 | 35.2 | 15.0 | 46.9 | 23.2, 18.3, 21.7, 25.4, 28.9 | 6.7, 7.5, 9.0, 16.6, 17.3 | 7.5 |
+| 4 | 152.0 | 35.3 | 13.1 | 47.3 | 20.8, 15.8, 19.0, 23.4, 26.5 | 5.9, 6.1, 7.4, 15.0, 15.5 | 6.1 |
+| 5-10 | 152-155 | 35.3-35.8 | 12.8 -> 6.6 | 47-48 | +/V+ then +/V- lost | | 3.0 (ill-defined) |
+
+* The gradient is dominated by the top-layer thickness: thinning the soft
+  layer lowers every level and every reordering field.  Step 4 is the last
+  design in which all five addressable levels exist: 152 nm wide, 13 nm top
+  layer, escape field halved (12.8 -> 6.1 mT), the vortex levels clustered
+  within 16-27 aJ instead of 25-37 aJ, and the mean reordering field down from
+  15.0 to 10.0 mT.
+* Beyond that the top-layer vortex states cease to exist (a 13 nm, 150 nm wide
+  NiFe layer no longer holds a vortex): the loop rejected and halved those
+  steps three times each, then (in this run) accepted the loss and kept
+  thinning to 6.6 nm, where the escape field reads 3 mT but the level
+  structure that makes the ASVI interesting is gone.  The script now stops at
+  the boundary and reports the last feasible design instead.
+* This is the design tension in one number: the ground state reorders more
+  easily with a thin top layer, the extra (vortex) levels need a thick, wide
+  one.  A design goal that keeps the vortex levels alive must be a constrained
+  optimum on that boundary; the missing constraint is the switching barrier of
+  the layers, which the string-method module (`asvi_rc/barriers.py`) provides.
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
