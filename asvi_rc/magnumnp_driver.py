@@ -39,6 +39,18 @@ def _import_magnumnp():
 
 
 # ------------------------------------------------------------------ soft geometry
+def _ramp(s, w):
+    """Kink-free occupation fraction as a function of the signed distance s (>0 outside).
+
+    Exact area fraction of a cell of width w cut by a straight edge, averaged
+    once more over the cell: a C1 quadratic spline going from 1 at s <= -w to 0
+    at s >= w.  Being C1 it has no kinks where edges sit exactly on cell
+    boundaries (torch.clamp would give a zero gradient there)."""
+    import torch
+    x = torch.clamp(s / w, -1.0, 1.0)
+    return torch.where(x <= 0, 1 - (x + 1) ** 2 / 2, (1 - x) ** 2 / 2)
+
+
 DESIGN_KEYS = ("length", "width", "t_bottom", "t_spacer", "t_top", "offset_x", "offset_y",
                "msat_bottom", "msat_top", "aex")
 
@@ -47,13 +59,11 @@ class SoftGeometry:
     """Differentiable cell-wise Ms and A for a set of islands.
 
     design : dict of torch scalars (any subset of DESIGN_KEYS); missing keys
-             are taken from the ASVIParams.  Lateral boundary cells get
-             rho = clamp(1/2 - sdf/(2 eps), 0, 1) (eps = half cell by default,
-             i.e. a linear ramp across one cell, the first-order area
-             fraction); vertical boundary cells get the exact volume fraction.
-             Cells further than eps from the boundary are exactly 0 or 1, so
-             the soft mask equals the hard mask of build_geometry except in
-             boundary cells.
+             are taken from the ASVIParams.  Cells within 2*eps (lateral,
+             default one cell) or 2*eps_z (vertical, default one cell) of an
+             island boundary get a fractional occupation from the C1 spline
+             ``_ramp``; all other cells are exactly 0 or 1, so the soft mask
+             equals the hard mask of build_geometry away from boundaries.
     """
 
     def __init__(self, p: ASVIParams, islands, design: dict, eps: float | None = None,
@@ -103,7 +113,7 @@ class SoftGeometry:
             sdf = torch.sqrt(du ** 2 + v ** 2 + 1e-30) - r        # signed distance to the stadium
         else:
             sdf = torch.maximum(u.abs() - L / 2, v.abs() - r)
-        return torch.clamp(0.5 - sdf / (2 * self.eps), 0.0, 1.0)
+        return _ramp(sdf, 2 * self.eps)
 
     def vertical(self, layer):
         """Soft z-profile (nz,) of the bottom (0) or top (1) layer: linear ramps of width 2*eps_z
@@ -113,7 +123,7 @@ class SoftGeometry:
         tb, ts, tt = self.par("t_bottom"), self.par("t_spacer"), self.par("t_top")
         z0, z1 = (0.0 * tb, tb) if layer == 0 else (tb + ts, tb + ts + tt)
         w = 2 * self.eps_z
-        return torch.clamp(0.5 + (self.zz - z0) / w, 0.0, 1.0) * torch.clamp(0.5 + (z1 - self.zz) / w, 0.0, 1.0)
+        return _ramp(z0 - self.zz, w) * _ramp(self.zz - z1, w)
 
     def densities(self):
         """List of per-island density fields rho_i (nx, ny, nz) in [0, 1]."""
@@ -131,8 +141,7 @@ class SoftGeometry:
             ms = self.par("msat_bottom" if isl.layer == 0 else "msat_top")
             Ms = Ms + ms * rho
             A = A + aex * rho
-        return Ms.clamp(max=float(max(self.par("msat_bottom"), self.par("msat_top")))).unsqueeze(-1), \
-            A.unsqueeze(-1)
+        return Ms.unsqueeze(-1), A.unsqueeze(-1)
 
     def regions(self, rhos=None, threshold: float = 0.5):
         """Hard (nz, ny, nx) region map and (nx, ny, nz, 3) axis-fill directions from the soft mask."""

@@ -18,6 +18,8 @@ asvi_rc/                shared numpy code (no GPU needed)
   readout.py            ridge regression, train/test, MSE/NRMSE, memory capacity, raw-input baseline
   mumax3_writer.py      emits unrolled .mx3 scripts (reservoir protocol, field sweep)
   mumaxplus_driver.py   ASVISimulation: the same protocol on the mumax+ Python API
+  magnumnp_driver.py    ASVISimulationNP: same interface on magnum.np (CPU/GPU, differentiable soft geometry)
+  backend.py            make_simulation(p, islands, backend)
   mock_reservoir.py     CPU toy (macrospins + dipoles) to test the pipeline without a GPU
 mumaxplus/run_reservoir.py    GPU: collect reservoir spectra with mumax+
 mumaxplus/run_field_sweep.py  GPU: FMR-vs-field map + hysteresis (input-range calibration)
@@ -175,6 +177,44 @@ several hours for a 400-point dataset. Reduce cost with `--loop-step 2e-3`,
 * **The toy reservoir** in `mock_reservoir.py` is *not* micromagnetics. It is a
   hysteretic macrospin-plus-dipole cartoon with Kittel-like Lorentzian "spectra"
   whose only purpose is exercising the pipeline and readout code in seconds.
+
+## Workflow D – magnum.np on the CPU, and gradient-based inverse design
+
+[magnum.np](https://gitlab.com/magnum.np/magnum.np) is a PyTorch finite-difference
+micromagnetic code: it runs on any CPU (or CUDA GPU) and every quantity is
+differentiable.  `asvi_rc/magnumnp_driver.py` wraps it behind the same
+interface as the mumax⁺ driver, so the catalogue / transition-table scripts
+run without a GPU (`--backend magnumnp`), and adds a differentiable *soft
+geometry* for inverse design.
+
+```bash
+pip install --index-url https://download.pytorch.org/whl/cpu torch && pip install magnumnp
+
+# the 16-state catalogue of one island, CPU (10 nm cells: 64x32x17, a few seconds per relaxation)
+python mumaxplus/state_catalogue.py --unit single --cell-xy 10e-9 --fast --backend magnumnp --out runs/np_single_10
+
+# gradient-based design: lower the mean reordering field by moving width and spacer
+python scripts/inverse_design.py --design width t_spacer --objective reorder --steps 15 --out runs/invdes
+```
+
+How the gradients work: the island length/width, the three layer thicknesses,
+the top-layer offset, the two Ms values and A are torch scalars; every cell's
+Ms and A are an anti-aliased level-set mask of them (boundary cells carry the
+fraction of their volume inside the island, everything else is exactly 0 or 1,
+so the soft island equals the hard one away from boundaries).  A relaxed state
+is stationary in m, hence dE_state/d(design) = ∂E/∂(design) at fixed m (the
+envelope theorem) – one backward pass per state, no differentiation through
+the minimiser.  Level energies dE_i = E_i − E_0, moments and reordering fields
+B_i = dE_i/|M_i − M_0| are then torch expressions and `torch.autograd.grad`
+gives the design gradient of any objective built from them (`spread`: cluster
+the levels; `reorder`: lower the mean reordering field; `escape`: the field
+that first lets the ground state reorder).  The exchange energy of the soft
+path is written division-free (magnum.np's field divides by Ms, which is
+NaN-safe only in the forward pass), and the mask ramps are C1 quadratic splines
+(torch.clamp has zero gradient at its bounds, which silently halves the
+sensitivity whenever an island edge sits exactly on a cell boundary).
+`tests/test_magnumnp.py` checks the soft/hard agreement and the gradient
+against finite differences on a coarse island.
 
 ## References
 
