@@ -12,9 +12,13 @@ Objectives (all over the field-addressable states, i.e. those with a net moment
 different from the ground state's):
   spread   : standard deviation of the level energies dE_i = E_i - E_0
              (well-clustered levels)
-  reorder  : mean reordering field B_i = dE_i / |M_i - M_0| along the island axis
+  reorder  : mean reordering field B_i = dE_i / max_g |M_i - M_g| along the island
+             axis, g running over the two degenerate antiparallel ground states
+             (the same definition as scripts/catalogue_analysis.py)
   escape   : reordering field of the *lowest* excited level only (the field
              that first lets the ground state reorder)
+A penalty keeps every level at least --min-level above the ground state, so the
+optimiser cannot "win" by turning a vortex state into the new ground state.
 
     python scripts/inverse_design.py --design width t_spacer --objective reorder --steps 15 --out runs/invdes
 """
@@ -31,7 +35,8 @@ from asvi_rc import ASVIParams                                                  
 from asvi_rc.geometry import single_island, macrospin_magnetization, vortex_magnetization, classify_layer  # noqa: E402
 from asvi_rc.magnumnp_driver import ASVISimulationNP, DESIGN_KEYS               # noqa: E402
 
-ADDRESSABLE = [("+", "-"), ("+", "+"), ("+", "V+"), ("+", "V-"), ("V+", "-"), ("V+", "+")]
+GROUND = [("+", "-"), ("-", "+")]                    # degenerate antiparallel ground states
+ADDRESSABLE = [("+", "+"), ("+", "V+"), ("+", "V-"), ("V+", "-"), ("V+", "+")]
 SCALE = {"length": 100e-9, "width": 20e-9, "t_bottom": 5e-9, "t_spacer": 5e-9, "t_top": 5e-9,
          "offset_x": 20e-9, "offset_y": 20e-9, "msat_bottom": 100e3, "msat_top": 100e3, "aex": 2e-12}
 BOUNDS = {"length": (350e-9, 700e-9), "width": (90e-9, 240e-9), "t_bottom": (10e-9, 45e-9),
@@ -63,6 +68,8 @@ def main(argv=None):
     ap.add_argument("--z-max", type=float, default=110e-9, help="grid height (headroom for thickness changes)")
     ap.add_argument("--init", nargs="*", default=[], help="initial values as key=value (SI)")
     ap.add_argument("--states", type=int, default=len(ADDRESSABLE), help="use the first N addressable states")
+    ap.add_argument("--min-level", type=float, default=5e-18, help="penalise levels closer than this (J) to the ground state")
+    ap.add_argument("--penalty", type=float, default=10.0, help="penalty weight per unit of (min_level - dE)/min_level")
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     import torch
@@ -80,7 +87,7 @@ def main(argv=None):
     islands = single_island(p)
     design = {k: torch.tensor(nominal[k], dtype=torch.float64, requires_grad=True) for k in DESIGN_KEYS}
     free = list(a.design)
-    states = ADDRESSABLE[: a.states]
+    states = GROUND + ADDRESSABLE[: a.states]
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
     sim = ASVISimulationNP(p, islands, verbose=False, design=design)
     axis = torch.tensor([*islands[0].axis, 0.0], dtype=torch.float64)
@@ -105,10 +112,12 @@ def main(argv=None):
             sim.set_material()
             E[lab] = sim.energy_tensor()
             M[lab] = (sim.moment() * axis).sum()
-        g = states[0]
-        valid = [lab for lab in states[1:] if ok[lab] and ok[g]]
+        grounds = [lab for lab in GROUND if ok[lab]]
+        g = min(grounds, key=lambda l: float(E[l]))
+        valid = [lab for lab in states if lab not in GROUND and ok[lab]]
         dE = {lab: E[lab] - E[g] for lab in valid}
-        dM = {lab: (M[lab] - M[g]).abs() + 1e-3 * M[g].abs().detach() for lab in valid}   # guard M-degenerate levels
+        dM = {lab: torch.stack([(M[lab] - M[gg]).abs() for gg in grounds]).max() + 1e-3 * M[g].abs().detach()
+              for lab in valid}                                     # guard M-degenerate levels
         B = {lab: dE[lab] / dM[lab] for lab in valid}
         if a.objective == "spread":
             J = torch.stack([dE[l] for l in valid]).std() * 1e18
@@ -117,6 +126,7 @@ def main(argv=None):
         else:
             low = min(valid, key=lambda l: float(dE[l]))
             J = B[low] * 1e3
+        J = J + a.penalty * sum(torch.relu(a.min_level - dE[l]) / a.min_level for l in valid)
         grads = torch.autograd.grad(J, [design[k] for k in free], allow_unused=True)
         grads = {k: (0.0 if gr is None else float(gr)) for k, gr in zip(free, grads)}
         rec = {"step": step, "J": float(J), "design": {k: float(design[k]) for k in DESIGN_KEYS},
