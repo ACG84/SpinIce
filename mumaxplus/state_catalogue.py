@@ -208,9 +208,15 @@ def build_transitions(p, sim, reps, a, out):
         print(f"state {i:2d} {'/'.join(states[i]):>24s}: "
               + " ".join(f"{k}->{v}" for k, v in table[i].items()) + f"   ({time.time() - t0:.0f} s)", flush=True)
         i += 1
+        # checkpoint after every row so a reclaimed VM does not lose the whole table
+        (out / "transitions.json").write_text(json.dumps(
+            {"axis_deg": a.trans_angle, "bias_T": bias, "amplitudes_T": amps.tolist(), "ramp_step_T": a.trans_step,
+             "states": [list(s) for s in states], "energies_J": energies,
+             "table": {str(k): v for k, v in table.items()}, "complete": i >= len(states),
+             "params": p.to_dict()}, indent=1))
     res = {"axis_deg": a.trans_angle, "bias_T": bias, "amplitudes_T": amps.tolist(), "ramp_step_T": a.trans_step,
            "states": [list(s) for s in states], "energies_J": energies,
-           "table": {str(k): v for k, v in table.items()}, "params": p.to_dict()}
+           "table": {str(k): v for k, v in table.items()}, "complete": True, "params": p.to_dict()}
     (out / "transitions.json").write_text(json.dumps(res, indent=1))
     print(f"transition table: {len(states)} states, saved to {out / 'transitions.json'}", flush=True)
     if a.trans_spectra:
@@ -220,7 +226,7 @@ def build_transitions(p, sim, reps, a, out):
             freqs, P = sim.fmr(tuple(bias * d))
             spectra.append(P.sum(axis=1))
             print(f"  spectrum of state {k}: peak {freqs[np.argmax(spectra[-1][1:]) + 1] / 1e9:.2f} GHz", flush=True)
-        np.savez_compressed(out / "state_spectra.npz", freqs=freqs, power=np.stack(spectra))
+            np.savez_compressed(out / "state_spectra.npz", freqs=freqs, power=np.stack(spectra))
 
 
 if __name__ == "__main__":
