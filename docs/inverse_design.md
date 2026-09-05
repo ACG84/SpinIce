@@ -136,6 +136,44 @@ transition tables.
   optimum on that boundary; the missing constraint is the switching barrier of
   the layers, which the string-method module (`asvi_rc/barriers.py`) provides.
 
+## Switching barriers with the string method (first results, not yet converged)
+
+`asvi_rc/barriers.py` implements the simplified string method (Barzilai-Borwein
+descent per image, equal-arc-length re-parametrisation) plus a climbing image,
+on the same magnum.np state, so the saddle is a stationary point and the
+envelope theorem gives the design gradient of a barrier for free.
+`scripts/barrier_demo.py` runs it for the top-layer reversal AP -> P of the
+nominal island (10 nm cells, 16 images, ~2-3 min per barrier on 4 cores).
+
+| applied field (mT) | barrier AP -> P (aJ) | level dE(P-AP) (aJ) | path |
+|---|---|---|---|
+| 0 | 37-39 (string maximum), 31 first hump | 27.4 | two humps: vortex nucleation in the top layer (~31 aJ), shoulder at the +/V+ level (~26 aJ), second hump before P |
+| 15 | ~16 | -5.8 | one hump |
+| 25 | ~14 | -28.1 | one hump |
+
+Design gradient of the zero-field barrier (autograd at the highest image vs
+central finite difference): d/d width 0.293 vs 0.309 aJ/nm; d/d t_spacer
+-0.33 aJ/nm; d/d t_top +1.27 aJ/nm (a thicker top layer is harder to switch,
+a thicker spacer easier, as expected).
+
+Caveats, to be fixed before barriers enter an objective:
+
+* The string is not converged to the aJ level: the energy of individual images
+  still jumps by several aJ between iterations because linear interpolation
+  between vortex textures creates unphysical intermediates on the 10 nm grid.
+* The climbing image, started from the highest string image, slid down the
+  second hump to 0.5 aJ above the P state with a residual torque of 1.5e3 A/m
+  (relaxed minima reach 1e-2 A/m), i.e. it did not lock onto a saddle.
+* Remedies in order of cost: split the path at the vortex intermediate
+  (AP -> +/V+ and +/V+ -> P separately), more images with geodesic (slerp)
+  re-parametrisation, climb only once the string tangent is stable, 5 nm
+  cells (4x cost).  The 15 and 25 mT barriers already show the expected
+  collapse toward the ~30 mT switching field of the top layer.
+
+The physical picture is useful even now: the top layer reverses through
+vortex nucleation, so the switching barrier and the +/V+ level are the same
+physics, which is why widening the island lowered both in the reorder run.
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
@@ -148,6 +186,5 @@ transition tables.
   feasible on the CPU; transition tables (hundreds of relaxations) still want
   a GPU.
 * Limitations: the moment gradients neglect the response of m* (exact only
-  for the energies); barriers (switching fields) are not differentiated yet -
-  a string-method / NEB energy barrier with the same envelope trick is the
-  natural extension, and magnum.np ships a `StringSolver`.
+  for the energies); barrier gradients need the string convergence work
+  listed above before they can constrain a design run.

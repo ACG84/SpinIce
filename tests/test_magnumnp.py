@@ -65,3 +65,17 @@ def test_design_gradient_matches_finite_difference(coarse):
     h = 2e-9
     fd = (splitting(p.width + h)[0] - splitting(p.width - h)[0]) / (2 * h)
     assert abs(grad - fd) < 0.15 * abs(fd) + 1e-12
+
+
+def test_string_barrier_runs_and_is_positive(coarse):
+    from asvi_rc.barriers import string_barrier
+    p, isl = coarse
+    sim = ASVISimulationNP(p, isl, verbose=False)
+    sim.set_magnetization(macrospin_magnetization(p, sim.regions, sim.islands, {1: 1.0, 2: -1.0}, tilt=0.02))
+    sim.minimize(); m_ap = sim.get_magnetization()
+    sim.set_magnetization(macrospin_magnetization(p, sim.regions, sim.islands, {1: 1.0, 2: 1.0}, tilt=0.02))
+    sim.minimize(); m_p = sim.get_magnetization()
+    res = string_barrier(sim, m_ap, m_p, n_images=6, n_iter=8, n_climb=4)
+    assert res["barrier_J"] > 0 and res["barrier_back_J"] >= -1e-21
+    assert 0 < res["i_saddle"] < 5
+    assert res["m_saddle"].shape == m_ap.shape
