@@ -45,6 +45,68 @@ def run_automaton(T, u, b_min, b_max, leak, jitter, seed=0, s0=0, shape="leak"):
     return np.array(states), np.array(leaks)
 
 
+def accessibility(T, S, lo_mT, hi_mT, start=None):
+    """Reachability structure of the transition graph restricted to |B| in [lo, hi] mT.
+
+    Returns (reachable-from-start set, largest strongly connected component,
+    edges used).  Both signs of the excursion are allowed inside the window.
+    """
+    n = len(S)
+    adj = {i: set() for i in range(n)}
+    for i in range(n):
+        for key, j in T[str(i)].items():
+            if lo_mT - 1e-9 <= abs(float(key)) <= hi_mT + 1e-9 and j != i:
+                adj[i].add(j)
+    start = 0 if start is None else start
+    seen, stack = {start}, [start]
+    while stack:
+        for j in adj[stack.pop()]:
+            if j not in seen:
+                seen.add(j); stack.append(j)
+    # strongly connected components (Kosaraju)
+    order, visited = [], set()
+    def dfs(u):
+        visited.add(u)
+        for v in adj[u]:
+            if v not in visited: dfs(v)
+        order.append(u)
+    for u in range(n):
+        if u not in visited: dfs(u)
+    radj = {i: set() for i in range(n)}
+    for u in range(n):
+        for v in adj[u]: radj[v].add(u)
+    comp, assigned = [], set()
+    for u in reversed(order):
+        if u in assigned: continue
+        c, st = set(), [u]
+        while st:
+            x = st.pop()
+            if x in assigned: continue
+            assigned.add(x); c.add(x); st.extend(radj[x] - assigned)
+        comp.append(c)
+    scc = max(comp, key=len)
+    return seen, scc, sum(len(v) for v in adj.values())
+
+
+def report_accessibility(T, S, energies=None):
+    amps = sorted({abs(float(k)) for row in T.values() for k in row})
+    print("accessibility vs amplitude window (states reachable from ground / largest mutually-reachable set / edges):")
+    for lo, hi in ((amps[0], amps[-1]), (24, 40), (28, 38), (31, 47), (36, 60)):
+        reach, scc, ne = accessibility(T, S, lo, hi)
+        print(f"  |B| in [{lo:g}, {hi:g}] mT: {len(reach):3d} / {len(scc):3d} / {ne:4d}   of {len(S)} states")
+    # minimal window width (centred scan) to reach >= k states from the ground state
+    print("minimal window [lo, hi] reaching >= k states:")
+    for k in (4, 8, 16, 32):
+        best = None
+        for lo in amps:
+            for hi in amps:
+                if hi < lo: continue
+                reach, scc, _ = accessibility(T, S, lo, hi)
+                if len(reach) >= k and (best is None or hi - lo < best[1] - best[0]):
+                    best = (lo, hi, len(reach), len(scc))
+        print(f"  k={k:2d}: " + (f"[{best[0]:g}, {best[1]:g}] mT (reaches {best[2]}, mutually reachable {best[3]})" if best else "not reachable"))
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("transitions")
@@ -61,6 +123,7 @@ def main(argv=None):
 
     tr = json.loads(Path(a.transitions).read_text())
     T, S = tr["table"], tr["states"]
+    report_accessibility(T, S)
     spec_path = Path(a.spectra) if a.spectra else Path(a.transitions).with_name("state_spectra.npz")
     if spec_path.exists():
         z = np.load(spec_path)
