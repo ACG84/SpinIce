@@ -71,6 +71,11 @@ def run(size, disorder, alpha, hc, angle, protocol, h_min, h_max, n, seed, leak,
     X = np.array(feats, dtype=float)
     if stack > 1:
         X = np.hstack([np.roll(X, k, axis=0) for k in range(stack)])
+    if len(cyc) > 1:
+        # phase-aware readout: separate weights for each drive angle of the cycle (the spin
+        # statistics differ by phase, so one linear readout over all phases is ill-posed)
+        phase = np.arange(n) % len(cyc)
+        X = np.hstack([X * (phase == k)[:, None] for k in range(len(cyc))])
     r2, mc = ridge_r2(X, u)
     distinct = len({tuple(f) for f in feats[n // 2:]})
     return {"size": list(size), "disorder": disorder, "alpha": alpha, "protocol": protocol, "angle": angle,
