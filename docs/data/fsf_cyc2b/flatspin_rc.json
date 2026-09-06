@@ -1,0 +1,38 @@
+[
+ {
+  "size": [
+   8,
+   8
+  ],
+  "disorder": 0.05,
+  "alpha": 0.005,
+  "protocol": "leak",
+  "angle": 45.0,
+  "angles": [
+   20.0,
+   70.0
+  ],
+  "hard_frac": 0.0,
+  "hard_ratio": 1.0,
+  "stack": 1,
+  "window": [
+   1.5,
+   2.5
+  ],
+  "spins": 144,
+  "R2": [
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01
+  ],
+  "MC": 0.0,
+  "distinct_states_2nd_half": 1.0,
+  "mean_flips": 9.512
+ }
+]

@@ -447,6 +447,28 @@ Ten-frame memory is therefore not reachable by protocol tuning of this
 architecture; whether island shape (astroid), disorder and coupling change
 that is what the differential-evolution search tests next.
 
+### Literature tricks on the 8 x 8 lattice: hard/soft populations, cycling angles, readout delay line
+
+| configuration (leak protocol, window 1.5-2.5 hc, alpha 0.005) | R^2(0) | R^2(1) | R^2(2) | MC | flips / step |
+|---|---|---|---|---|---|
+| baseline, 45 deg drive | 0.80 | 0.25 | 0.08 | 1.13 | 59 |
+| 30 % hard islands at 1.5 hc | 0.77 | 0.26 | 0.06 | 1.09 | 61 |
+| 50 % hard islands at 1.8 hc | 0.77 | 0.18 | 0 | 0.95 | 61 |
+| 50 % hard, window 1.5-3.5 hc | 0.52 | 0.03 | 0 | 0.57 | 72 |
+| readout delay line, last 3 states (baseline) | 0.75 | 0.73 | 0.76 | 2.46 | 59 |
+
+* A hard/soft coercive-field mixture (the lattice stand-in for thick/thin
+  layers) does not lengthen the memory under a single drive axis: the hard
+  islands either never switch (window below their threshold) or are rewritten
+  like the rest (wider window).  Same verdict as the multilayer island.
+* The readout delay line (concatenating the last three spin vectors) lifts
+  R^2(1) and R^2(2) to ~0.75 and MC to 2.5 without changing the magnet at
+  all.  Reported memory capacities in the literature should be read with
+  this in mind: part of them can live in the electronics.
+* Cycling drive angles need a phase-aware readout (one weight set per angle);
+  with a single readout the test R^2 is meaningless (strongly negative).
+  Rerun in progress with the phase-aware readout.
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
