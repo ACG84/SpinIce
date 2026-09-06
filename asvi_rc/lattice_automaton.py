@@ -147,8 +147,13 @@ class ASVILattice:
         return out
 
     def relax(self, B_ext, max_rounds=30, sample=True):
-        """Cascade at fixed field; returns the number of island switches."""
+        """Cascade at fixed field; returns the number of island switches.
+
+        In the sampled mode the switching noise (thermal / unresolved disorder, width w) is drawn
+        ONCE per island per field stage; re-drawing it every cascade round would let any
+        sub-threshold transition fire eventually and randomise the lattice."""
         n_flips = 0
+        noise = self.rng.standard_normal(self.n) * self.width if sample else np.zeros(self.n)
         for _ in range(max_rounds):
             gl = self.gains(B_ext)
             cand = []
@@ -156,9 +161,8 @@ class ASVILattice:
                 if not rows:
                     continue
                 j, l, g, bar = max(rows, key=lambda r: r[2] - r[3])
-                x = (g - bar) / (self.width * abs(self.M_layer[j, l] - self.M_layer[self.s[i], l]) + 1e-30)
-                p = 1.0 / (1.0 + math.exp(-max(min(x, 50), -50)))
-                if (self.rng.random() < p) if sample else (p > 0.5):
+                dMl = abs(self.M_layer[j, l] - self.M_layer[self.s[i], l])
+                if g - bar + noise[i] * dMl > 0:
                     cand.append((i, j))
             if not cand:
                 break
