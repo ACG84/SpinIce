@@ -424,6 +424,29 @@ saturates it every step (~2.5 hc):
   feedback into the amplitude lowers every value (lag-1: 0.30 -> 0.23 -> 0.11
   at g = 0.2, 0.5).
 
+### Rewrite-fraction scan (8 x 8, alpha 0.005): the naive lever fails
+
+| write window (hc) | leak (hc) | flips / step | distinct states | R^2(0) | R^2(1) | R^2(2) |
+|---|---|---|---|---|---|---|
+| 1.4-1.8 (narrow, at threshold) | 1.0 +- 0.15 | 13 (9 %) | 2 | 0.22 | 0.00 | 0.00 |
+| 1.6-2.0 | 1.0 +- 0.15 | 15 (10 %) | 2 | 0.71 | 0.00 | 0.00 |
+| 1.5-2.5 (wide) | 1.0 +- 0.15 | 59 (41 %) | 13 | 0.82 | 0.28 | 0.11 |
+| 1.5-2.5 | 1.2 +- 0.05 | 66 | 21 | 0.81 | 0.27 | 0.09 |
+| 1.5-2.5 | 0.7 +- 0.4 (weak, random) | 55 | 33 | 0.77 | 0.04 | 0.00 |
+
+Narrowing the window does bring the rewrite fraction down to ~10 %, but the
+lattice then behaves as a two-state toggle: the same subset of islands flips
+every step regardless of the amplitude, so the input is not encoded and there
+is nothing to remember.  The memory of this lattice lives in the cascades
+(tens of flips whose extent depends on the microstate), and those cannot be
+made sparse by the drive alone.  A weaker, more random leak (0.7 +- 0.4 hc)
+visits more states but loses the lag-1 memory, so on the lattice the
+stochastic reset that helped nothing on single islands helps nothing here
+either; a strong, nearly deterministic leak with a wide write window is best.
+Ten-frame memory is therefore not reachable by protocol tuning of this
+architecture; whether island shape (astroid), disorder and coupling change
+that is what the differential-evolution search tests next.
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
