@@ -16,7 +16,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from asvi_rc.force import TableReservoir, SoftReservoir, closed_loop, make_target   # noqa: E402
+from asvi_rc.force import TableReservoir, SoftReservoir, FlatspinReservoir, closed_loop, make_target   # noqa: E402
 from scripts.protocol_design import landscape                                       # noqa: E402
 
 
@@ -25,6 +25,9 @@ def main(argv=None):
     ap._negative_number_matcher = re.compile(r"^-\d+$|^-\d*\.\d+$|^-\d+(\.\d*)?[eE][-+]?\d+$")  # accept -26.8e-3
     ap.add_argument("--table", type=str, default=None, help="transitions.json (deterministic automaton)")
     ap.add_argument("--catalogue", type=str, default=None, help="catalogue.json (soft automaton, sampled)")
+    ap.add_argument("--flatspin", type=int, nargs=2, default=None, metavar=("NX", "NY"), help="flatspin square lattice size")
+    ap.add_argument("--fs-alpha", type=float, default=0.005); ap.add_argument("--fs-disorder", type=float, default=0.05)
+    ap.add_argument("--fs-hc", type=float, default=0.03)
     ap.add_argument("--angle", type=float, default=1.0)
     ap.add_argument("--barrier", type=float, default=70e-18)
     ap.add_argument("--coercive", type=float, nargs="+", default=None,
@@ -40,7 +43,10 @@ def main(argv=None):
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     proto = dict(zip(("b_min", "b_max", "leak", "jitter", "bias"), a.protocol))
-    if a.table:
+    if a.flatspin:
+        make_res = lambda seed: FlatspinReservoir(a.flatspin, a.fs_alpha, a.fs_disorder, a.fs_hc, a.angle, seed)
+        print(f"flatspin square lattice {a.flatspin}, alpha {a.fs_alpha}, disorder {a.fs_disorder}, hc {a.fs_hc} T")
+    elif a.table:
         tab = json.loads(Path(a.table).read_text())
         make_res = lambda seed: TableReservoir(tab)
         print(f"table automaton: {len(tab['states'])} states, amplitudes {tab['amplitudes_T']}")

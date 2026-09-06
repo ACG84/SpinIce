@@ -105,6 +105,32 @@ class SoftReservoir:
         return r
 
 
+class FlatspinReservoir:
+    """flatspin macrospin lattice (Stoner-Wohlfarth switching, dipolar coupling, disorder) driven
+    by field loops along a fixed angle; fields are given in tesla like the other reservoirs and
+    the state feature is the spin vector (+-1) plus a bias term."""
+
+    def __init__(self, size=(8, 8), alpha=0.005, disorder=0.05, hc=0.03, angle_deg=45.0, seed=0, model="square"):
+        import flatspin.model as fm
+        cls = {"square": fm.SquareSpinIceClosed, "pinwheel": fm.PinwheelSpinIceDiamond, "kagome": fm.KagomeSpinIce}[model]
+        self.m = cls(size=tuple(size), alpha=alpha, disorder=disorder, hc=hc, use_opencl=0, random_seed=seed)
+        self.n = int(self.m.spin_count)
+        self.d = np.array([np.cos(np.radians(angle_deg)), np.sin(np.radians(angle_deg))])
+        self.reset()
+
+    def reset(self):
+        self.m.polarize()
+        self.s = 0
+
+    def apply(self, b):
+        self.m.set_h_ext(list(b * self.d)); self.m.relax()
+        self.m.set_h_ext([0.0, 0.0]); self.m.relax()
+        self.s = hash(self.m.spin.tobytes())
+
+    def features(self):
+        return np.concatenate([self.m.spin.astype(float), [1.0]])
+
+
 def closed_loop(res, u, target, protocol, gain: float, train_steps: int, alpha: float = 1.0,
                 seed: int = 0, washout: int = 20):
     """Run FORCE on a reservoir. protocol = dict(b_min, b_max, leak, jitter, bias) in tesla.
