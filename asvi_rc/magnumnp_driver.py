@@ -218,10 +218,30 @@ class ASVISimulationNP:
         t = torch.where(n > 0, t / n.clamp(min=1e-30), torch.zeros_like(t))
         inside = self._inside()
         if self._fill is not None:                       # soft mask wider than the seed regions
-            empty = inside & (n[..., 0] == 0)
-            t[empty] = self._fill[empty]
+            t = self._dilate(t, inside)
         t[~inside] = 0.0
         self.state.m = t
+
+    def _dilate(self, t, inside, n_iter: int = 4):
+        """Give magnetic cells that carry no seed (partial boundary cells of the soft mask) the
+        average direction of their seeded neighbours, so a vortex or a macrospin extends smoothly
+        into the fractional cells; cells still empty afterwards fall back to the island axis."""
+        torch = self.torch
+        for _ in range(n_iter):
+            has = (torch.linalg.norm(t, dim=-1) > 0)
+            empty = inside & ~has
+            if not bool(empty.any()):
+                break
+            acc = torch.zeros_like(t)
+            for ax in range(3):
+                for sh in (1, -1):
+                    acc = acc + torch.roll(t, sh, dims=ax)
+            nrm = torch.linalg.norm(acc, dim=-1, keepdim=True)
+            new = torch.where(nrm > 0, acc / nrm.clamp(min=1e-30), torch.zeros_like(acc))
+            t = torch.where(empty[..., None], new, t)
+        empty = inside & (torch.linalg.norm(t, dim=-1) == 0)
+        t[empty] = self._fill[empty]
+        return t
 
     def get_magnetization(self) -> np.ndarray:
         return self.state.m.detach().cpu().numpy().transpose(3, 2, 1, 0).copy()
