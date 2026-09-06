@@ -17,6 +17,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from asvi_rc import ASVIParams                                                  # noqa: E402
+from asvi_rc.geometry import build_islands, single_island                       # noqa: E402
 from asvi_rc.softautomaton import memory_proxy                                  # noqa: E402
 from scripts.catalogue_analysis import layer_moment                             # noqa: E402
 
@@ -25,15 +26,26 @@ BOUNDS = {"b_min": (5e-3, 80e-3), "b_max": (5e-3, 100e-3), "leak": (0.0, 80e-3),
           "bias": (-60e-3, 0.0)}
 
 
-def landscape(path):
+def landscape(path, angle_deg):
+    """Distinct relaxed states of a catalogue with energies and moments projected on the drive axis.
+
+    Moments: sum over layer-islands of m_axis * layer moment * (island axis . drive direction), so a
+    45 deg drive of the unit cell couples to both sublattices with 1/sqrt(2) each."""
     import torch
     c = json.loads(Path(path).read_text())
     p = ASVIParams.from_dict(c["params"])
-    rows = sorted(c["rows"], key=lambda r: r["energy_J"])
+    islands = build_islands(p) if c.get("unit") == "cell" else single_island(p)
+    d = np.array([np.cos(np.radians(angle_deg)), np.sin(np.radians(angle_deg))])
+    proj = [layer_moment(p, isl.layer) * float(np.dot(isl.axis, d)) for isl in islands]
+    best = {}
+    for r in c["rows"]:
+        k = tuple(r["final"])
+        if k not in best or r["energy_J"] < best[k]["energy_J"]:
+            best[k] = r
+    rows = sorted(best.values(), key=lambda r: r["energy_J"])
     states = [tuple(r["final"]) for r in rows]
-    mom = [layer_moment(p, j % 2) for j in range(len(states[0]))]
     E = torch.tensor([r["energy_J"] for r in rows], dtype=torch.float64)
-    M = torch.tensor([sum(mx * mo for mx, mo in zip(r["m_axis"], mom)) for r in rows], dtype=torch.float64)
+    M = torch.tensor([sum(mx * mo for mx, mo in zip(r["m_axis"], proj)) for r in rows], dtype=torch.float64)
     return states, E, M
 
 
@@ -49,6 +61,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("catalogue")
     ap.add_argument("--protocol", choices=["leak", "unipolar"], default="leak")
+    ap.add_argument("--angle", type=float, default=1.0, help="drive axis (deg from x); 45 for the unit cell")
     ap.add_argument("--free", nargs="+", default=list(PROTO), choices=list(PROTO))
     ap.add_argument("--init", nargs="*", default=[], help="key=value (T)")
     ap.add_argument("--steps", type=int, default=30)
@@ -60,7 +73,8 @@ def main(argv=None):
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     import torch
-    states, E, M = landscape(a.catalogue)
+    states, E, M = landscape(a.catalogue, a.angle)
+    print(f"{len(states)} states, drive axis {a.angle:g} deg", flush=True)
     pr = {k: torch.tensor(v, dtype=torch.float64, requires_grad=True) for k, v in PROTO.items()}
     for kv in a.init:
         k, v = kv.split("="); pr[k].data.fill_(float(v))
