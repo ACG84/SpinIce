@@ -465,9 +465,19 @@ that is what the differential-evolution search tests next.
   R^2(1) and R^2(2) to ~0.75 and MC to 2.5 without changing the magnet at
   all.  Reported memory capacities in the literature should be read with
   this in mind: part of them can live in the electronics.
-* Cycling drive angles need a phase-aware readout (one weight set per angle);
-  with a single readout the test R^2 is meaningless (strongly negative).
-  Rerun in progress with the phase-aware readout.
+* Cycling drive angles (spatial multiplexing of time) with a phase-aware
+  readout (one weight set per angle): two angles 0/90 deg give R^2(0) =
+  0.65-0.81 but R^2(1) = 0 with only 7-9 distinct states (each sublattice
+  becomes a toggle), and three or four angles make the lattice wander
+  (130-150 distinct states, non-stationary readout, negative test R^2).  On
+  this square lattice the sublattices are not independent: the dipolar
+  coupling that produces the cascades also lets the write into one sublattice
+  reorganise the other, so the previous write does not survive.  Adding the
+  hard population does not change this.
+* Differential evolution over the eight lattice/protocol/astroid parameters
+  (8 x 8, long-memory objective) had not improved on the hand-found design
+  after two generations (48 evaluations): R^2 = 0.82 / 0.29 / 0.09 at lags
+  0-2 remains the best.
 
 ## What to do with it
 
