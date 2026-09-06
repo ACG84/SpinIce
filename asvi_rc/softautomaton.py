@@ -79,12 +79,16 @@ def simulate(E, M, states, u, stages, barrier, width, cascade=3, rho0=None, pair
     for t, ut in enumerate(u):
         for f in stages:
             B = f(float(ut), float(r[t]))
-            if torch.is_tensor(B) and B.requires_grad:               # protocol parameters being optimised
-                rho = rho @ transition_matrix(E, M, states, B, barrier, width, cascade, pairs)
-                continue
             key = round(float(B) * 1e4)                              # 0.1 mT input quantisation (cache key)
             if key not in cache:
-                cache[key] = transition_matrix(E, M, states, key * 1e-4, barrier, width, cascade, pairs)
+                if torch.is_tensor(B) and B.requires_grad:
+                    # protocol parameters being optimised: keep the graph of the first field that hit
+                    # this key (later hits differ by < 0.1 mT, so their parameter gradients agree to
+                    # that precision) - one differentiable matrix per distinct field instead of per step
+                    Bq = B + (key * 1e-4 - B).detach()
+                    cache[key] = transition_matrix(E, M, states, Bq, barrier, width, cascade, pairs)
+                else:
+                    cache[key] = transition_matrix(E, M, states, key * 1e-4, barrier, width, cascade, pairs)
             rho = rho @ cache[key]
         out.append(rho)
     return torch.stack(out)
