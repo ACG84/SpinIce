@@ -293,6 +293,60 @@ NARMA-2, autonomous sine generation.
   is the first candidate; the sampled soft automaton runs it in seconds once
   its protocol is optimised (in progress).
 
+## Multilayer islands (N layers) and the per-layer coercive model
+
+`ASVIParams.extra_layers` adds (spacer, NiFe) pairs above the top layer (lateral
+offsets follow the shadow-deposition rule, proportional to height, unless
+`extra_offsets` is given); regions, moments, the soft geometry and the
+catalogue CLI (`--extra-layers`) handle any number of layers.
+
+### 3-layer island: NiFe 30 / Al 35 / NiFe 20 / Al 35 / NiFe 25 nm (10 nm cells, 64 states)
+
+| level | 2-layer island (aJ) | 3-layer island (aJ) |
+|---|---|---|
+| ground (antiparallel stack) | 0 | 0 |
+| next macrospin states | 28.1 (+/+) | 3.4 (+/-/-), 5.7 (+/+/-) |
+| first vortex states | 25.7 | 17.5 - 24.5 (band of 8 levels) |
+| reordering fields of the lowest levels (mT) | 8.4, 12.8, 15.2 | 1.2, 1.7 (macrospin), 6.7 - 10.8 (vortex band) |
+| switching fields (mT) | top 30, bottom 55 | 20 nm: 24, 25 nm: 53, 30 nm: > 60 |
+
+All 64 seeded states are stable.  Stacking gives exactly the clustered level
+structure of the colleague's criterion (six macrospin states within 6 aJ
+instead of one 28 aJ gap) and a graded switching-field hierarchy, at 57k cells
+against 109k cells for the two-island unit cell (256 states).
+
+### Proxy revision: per-layer coercive fields
+
+The 3-layer sweep exposed a flaw of the one-barrier switching rule: with one
+energy barrier a thicker layer (larger moment) switches at a *lower* field,
+the opposite of the sweep (24 / 53 / > 60 mT for 20 / 25 / 30 nm), so above
+~33 mT the model flipped every layer at once.  The soft automaton now takes
+per-layer coercive fields B_c (calibrated from the hysteresis sweep) and a
+layer switches when the driving field exceeds B_c plus the level term
+dE/|dM| (`transition_matrix(..., barrier=[B_c per layer])`).
+
+### Memory of the multilayer island (corrected proxy, coercive model)
+
+| island | best protocol found (mT) | R^2(0) | R^2(1) | states visited (bits) |
+|---|---|---|---|---|
+| 2-layer | window 5-56, leak 29 +- 4, bias 0 | 0.67 | 0.01 | 1.2 |
+| 3-layer | window 5-84, leak 54, bias -3 | 0.81 | 0.01 | 2.3 |
+| 3-layer, stochastic reset of the 25 nm layer (leak 48 +- 6) | | 0.57 | 0.04 | 2.2 |
+
+More layers raise the lag-0 encoding (more thresholds inside the window) but
+still give no memory beyond the current input.  The reason is structural for a
+stack driven by one uniform field along its axis: a layer is either erased
+every step by the leak (volatile: encodes u_t) or never erased (a latch that
+records the maximum input since its last reset).  Such max-filter bits carry
+little information about u_{t-1}, and the interlayer coupling shifts the
+volatile thresholds by only 1-2 mT (the small macrospin gaps), less than the
+2 mT switching width.  A stack alone is therefore a multi-threshold encoder,
+not a fading-memory reservoir.  What creates history dependence in an
+artificial spin ice is the *lattice*: a neighbour's state shifts an island's
+switching field through the vertex field by several mT, so the same input
+does different things depending on the microstate.  That is the unit-cell
+(45 deg drive) test, running now with the coercive model.
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
