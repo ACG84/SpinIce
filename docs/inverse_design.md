@@ -249,6 +249,50 @@ after the seeding fix below):
   design loop).  The driver now dilates the seed texture into the fractional
   cells; all 16 states then relax as seeded in every setup.
 
+### Correction: the readout sees one state, not a distribution
+
+The first version of the proxy fed the state *probabilities* rho_t to the
+ridge readout.  With a 2 mT switching width that makes rho_t a smooth
+function of the input, and the readout "recalled" information that a one-shot
+measurement of a single magnetic state never contains: the MC of 2.08 and the
+R^2(1) = 0.90 above are artefacts of that.  The memory curve is now the
+expected R^2 of a readout on the *sampled* state (conditional means given the
+state, computed exactly from rho_t; `softautomaton.memory_curve`), which a
+sampled stochastic automaton reproduces (`asvi_rc/force.py`, lag-0 recall
+R^2 0.55 sampled vs 0.64 expected).  With the corrected proxy the single
+island has no memory at all: re-optimising the leak protocol gives at best
+R^2(0) = 0.64 (a two-threshold encoding of the current input with a 5-55 mT
+window and readout at zero field) and R^2(k >= 1) = 0, because the leak
+excursion erases the previous write.  This agrees with the GPU runs
+(Mackey-Glass NRMSE 1.0, no past-input recall) and with the physical
+argument: one island driven along its axis is a one- or two-bit latch, not a
+reservoir.  The earlier protocol and design tables above are superseded by
+`docs/data/protocol_leak_v2*`.
+
+## FORCE learning (`asvi_rc/force.py`, `scripts/force_rc.py`)
+
+Online recursive-least-squares readout with the output fed back into the next
+loop amplitude, B_{t+1} = b_min + (b_max - b_min) clip(u_{t+1} + g z_t, 0, 1)
+(a controller between the FMR readout and the field coil).  Reservoirs: the
+soft automaton sampled as a stochastic automaton, or a GPU transition table
+(deterministic, amplitudes snapped to the table grid).  Tasks: delayed recall,
+NARMA-2, autonomous sine generation.
+
+| reservoir | protocol | lag-0 recall R^2 | lag-1 | NARMA-2 | sine | feedback gain effect |
+|---|---|---|---|---|---|---|
+| single island, 16 states (soft, sampled) | 5-55 mT, leak 33.8, bias 0 | 0.55 | 0.00 | 0.00 | 0.00 | none (g = 0.3, 0.6, 1.0) |
+| unit cell, GPU 45 deg table (11 states, 8 mT grid) | 31-47 / 40-56 mT, leak 39-48 +- 8, bias -20 | 0.00 | 0.00 | 0.00 | 0.00 | none: stuck in one state |
+
+* Feedback cannot create memory where the open loop has none: on the single
+  island the fed-back output only modulates a one-bit write that the leak
+  erases; on the GPU table the leak drives the cell into the +/-/+/+ sink
+  (a fixed point of every excursion in the table) and nothing moves again.
+* FORCE therefore needs what the whole analysis keeps pointing at: an
+  automaton with a mutually reachable core of many states inside the
+  protocol window.  The unit-cell landscape (253 states) under a 45 deg drive
+  is the first candidate; the sampled soft automaton runs it in seconds once
+  its protocol is optimised (in progress).
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the

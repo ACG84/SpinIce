@@ -23,8 +23,9 @@ allow sequential switching within one excursion.
 
 Reservoir: the state probability vector rho_t is propagated through the field
 stages of each protocol step (e.g. leak excursion, write excursion, bias);
-features are rho_t at the bias field; the memory curve is the test R^2 of a
-ridge readout of u(t-k) from rho_t, and MC = sum_k R^2(k).
+the readout sees the sampled state, so the memory curve is the expected test
+R^2 of predicting u(t-k) by the conditional mean given the state (computed
+from rho_t), and MC = sum_k R^2(k).
 """
 from __future__ import annotations
 
@@ -90,20 +91,27 @@ def simulate(E, M, states, u, stages, barrier, width, cascade=3, rho0=None, pair
 
 
 def memory_curve(rho, u, k_max=8, alpha=1e-3, train_frac=0.6, washout=50):
-    """Test R^2 of a ridge readout of u(t-k) from rho_t for k = 0..k_max (torch)."""
+    """Expected test R^2(k) of a readout that sees the *sampled* state (one-hot), k = 0..k_max.
+
+    rho_t is the probability of each state given the input history; the reservoir is
+    in exactly one of them, so a readout can at best predict E[y | s].  Conditional
+    means are estimated on the training part, ybar_s = sum_t rho_t(s) y_t / sum_t rho_t(s),
+    and the expected squared error on the test part is sum_t sum_s rho_t(s) (y_t - ybar_s)^2.
+    This is exact for the sampled process and differentiable; feeding rho itself to a
+    regression would leak the switching probabilities as if they were observable.
+    """
     import torch
     T = rho.shape[0]
     u = torch.as_tensor(np.asarray(u), dtype=rho.dtype)
-    X = torch.cat([rho, torch.ones(T, 1, dtype=rho.dtype)], dim=1)
     r2 = []
     for k in range(k_max + 1):
         idx = torch.arange(washout + k, T)
-        Xk, yk = X[idx], u[idx - k]
+        R, y = rho[idx], u[idx - k]
         n_tr = int(len(idx) * train_frac)
-        Xtr, ytr, Xte, yte = Xk[:n_tr], yk[:n_tr], Xk[n_tr:], yk[n_tr:]
-        A = Xtr.T @ Xtr + alpha * torch.eye(X.shape[1], dtype=rho.dtype)
-        w = torch.linalg.solve(A, Xtr.T @ ytr)
-        res = ((yte - Xte @ w) ** 2).sum()
+        Rtr, ytr, Rte, yte = R[:n_tr], y[:n_tr], R[n_tr:], y[n_tr:]
+        n_s = Rtr.sum(0) + alpha
+        ybar_s = (Rtr * ytr[:, None]).sum(0) / n_s + alpha * ytr.mean() / n_s
+        res = (Rte * (yte[:, None] - ybar_s[None, :]) ** 2).sum()
         tot = ((yte - yte.mean()) ** 2).sum()
         r2.append(1 - res / tot)
     r2 = torch.stack(r2)
