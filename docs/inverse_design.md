@@ -221,35 +221,33 @@ automaton visits ~1.4 bits of its 16 states and recalls only the current input
 ### Joint design with the memory objective (`--objective memory`, 16 tracked states)
 
 `--design width t_spacer t_top --objective memory --steps 8` with the
-optimised leak protocol (34 min, 16 relaxations per step):
+optimised leak protocol (29 min, 16 relaxations per step, all 16 states alive
+after the seeding fix below):
 
 | step | width (nm) | spacer (nm) | t_top (nm) | MC | R^2(k = 0..2) |
 |---|---|---|---|---|---|
-| 0 | 140 | 35.0 | 20.0 | 2.11 | 0.99, 0.88, 0.07 |
-| 1 | 143.7 | 34.9 | 22.5 | 1.96 | 0.98, 0.75, 0.05 |
-| 2 | 141.7 | 34.8 | 20.0 | 2.12 | 0.99, 0.89, 0.07 |
-| 8 | 143.2 | 33.3 | 20.0 | 2.12 | 0.99, 0.89, 0.07 |
+| 0 | 140 | 35.0 | 20.0 | 2.07 | 0.98, 0.88, 0.06 |
+| 1 | 145.6 | 35.3 | 17.5 | 2.05 | 0.97, 0.86, 0.05 |
+| 2 | 142.6 | 35.1 | 18.8 | 2.09 | 0.98, 0.88, 0.05 |
+| 8 | 141.7 | 34.0 | 18.6 | 2.09 | 0.99, 0.88, 0.06 |
 
-* For this protocol the nominal geometry is already at a flat optimum of the
-  proxy (MC 2.11-2.12); the loop only oscillated between t_top = 20 and
-  22.5 nm (fixed normalised step; the script now halves the step on
-  overshoot).  Optimising the protocol (0.56 -> 2.08) mattered far more than
-  the geometry did (2.11 -> 2.12).
+* For this protocol the nominal geometry sits on a flat optimum of the proxy:
+  eight steps move the design by a few nm and MC by 0.02 (the step decay
+  prevents the oscillation seen in the first run).  Optimising the protocol
+  (0.56 -> 2.08) mattered far more than the geometry (2.07 -> 2.09).
 * The ceiling is structural: one island driven along its own axis has 16
   states, of which the protocol can use about 2.2 bits, giving one step of
   memory plus the current input.  More memory needs more reachable states,
   i.e. the lattice unit cell (256 states, 45 deg drive of both sublattices).
-  The proxy, the protocol optimiser and the design loop all take the unit
-  cell unchanged (energies and moments from its catalogue), which is the next
-  run.
-* Only 9-10 of the 16 seeded states survived relaxation in this run.  Cause:
-  the soft mask puts 12.5 % of Ms into the cell just outside every interface,
-  those cells carried no seed and were filled with the island axis direction,
-  so a uniform "cap" sat on every seeded vortex and steered the relaxation
-  (2 states lost on the nominal grid, 7 with the taller grid of the design
-  loop).  The driver now dilates the seed texture into the fractional cells;
-  all 16 states then relax as seeded in every setup (hard mask, soft mask,
-  soft mask with headroom).  The run is being repeated with the fix.
+  The proxy, the protocol optimiser and the design loop take the unit cell
+  unchanged (energies and moments from its catalogue), which is the next run.
+* Seeding note: in the first run only 9-10 of the 16 seeded states survived.
+  Cause: the soft mask puts 12.5 % of Ms into the cell just outside every
+  interface, those cells carried no seed and were filled with the island axis
+  direction, so a uniform "cap" sat on every seeded vortex and steered the
+  relaxation (2 states lost on the nominal grid, 7 with the taller grid of the
+  design loop).  The driver now dilates the seed texture into the fractional
+  cells; all 16 states then relax as seeded in every setup.
 
 ## What to do with it
 
