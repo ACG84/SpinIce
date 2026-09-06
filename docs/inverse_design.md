@@ -218,6 +218,34 @@ automaton visits ~1.4 bits of its 16 states and recalls only the current input
   spectrum, which is a further (state -> spectrum) map that the GPU tables
   showed to be injective enough on the visited states.
 
+### Joint design with the memory objective (`--objective memory`, 16 tracked states)
+
+`--design width t_spacer t_top --objective memory --steps 8` with the
+optimised leak protocol (34 min, 16 relaxations per step):
+
+| step | width (nm) | spacer (nm) | t_top (nm) | MC | R^2(k = 0..2) |
+|---|---|---|---|---|---|
+| 0 | 140 | 35.0 | 20.0 | 2.11 | 0.99, 0.88, 0.07 |
+| 1 | 143.7 | 34.9 | 22.5 | 1.96 | 0.98, 0.75, 0.05 |
+| 2 | 141.7 | 34.8 | 20.0 | 2.12 | 0.99, 0.89, 0.07 |
+| 8 | 143.2 | 33.3 | 20.0 | 2.12 | 0.99, 0.89, 0.07 |
+
+* For this protocol the nominal geometry is already at a flat optimum of the
+  proxy (MC 2.11-2.12); the loop only oscillated between t_top = 20 and
+  22.5 nm (fixed normalised step; the script now halves the step on
+  overshoot).  Optimising the protocol (0.56 -> 2.08) mattered far more than
+  the geometry did (2.11 -> 2.12).
+* The ceiling is structural: one island driven along its own axis has 16
+  states, of which the protocol can use about 2.2 bits, giving one step of
+  memory plus the current input.  More memory needs more reachable states,
+  i.e. the lattice unit cell (256 states, 45 deg drive of both sublattices).
+  The proxy, the protocol optimiser and the design loop all take the unit
+  cell unchanged (energies and moments from its catalogue), which is the next
+  run.
+* Only 9-10 of the 16 seeded states survived relaxation in the soft-geometry
+  path (all 16 do with the hard mask), so the automaton in this run was
+  missing most bottom-layer-vortex states; see the seeding note below.
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the

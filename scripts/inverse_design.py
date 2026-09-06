@@ -113,6 +113,7 @@ def main(argv=None):
     last = None                                    # (design values, grads, ok) of the last accepted step
     halvings = 0
     step = 0
+    lr, best_J = a.lr, np.inf
     while step <= a.steps:
         sim.set_material()
         E, M, ok = {}, {}, {}
@@ -189,11 +190,15 @@ def main(argv=None):
         if step == a.steps:
             break
         step += 1
-        # 3. normalised gradient step with bounds (each parameter moves at most lr*SCALE)
+        # 3. normalised gradient step with bounds (each parameter moves at most lr*SCALE);
+        #    halve the step when the objective got worse (overshoot)
+        if float(J) > best_J:
+            lr *= 0.5
+        best_J = min(best_J, float(J))
         gn = max(abs(grads[k]) * SCALE[k] for k in free) or 1.0
         with torch.no_grad():
             for k in free:
-                new = float(design[k]) - a.lr * SCALE[k] * grads[k] * SCALE[k] / gn
+                new = float(design[k]) - lr * SCALE[k] * grads[k] * SCALE[k] / gn
                 design[k].fill_(min(max(new, BOUNDS[k][0]), BOUNDS[k][1]))
     print("wrote", out / "history.json")
 
