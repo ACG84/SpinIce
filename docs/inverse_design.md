@@ -242,9 +242,14 @@ optimised leak protocol (34 min, 16 relaxations per step):
   The proxy, the protocol optimiser and the design loop all take the unit
   cell unchanged (energies and moments from its catalogue), which is the next
   run.
-* Only 9-10 of the 16 seeded states survived relaxation in the soft-geometry
-  path (all 16 do with the hard mask), so the automaton in this run was
-  missing most bottom-layer-vortex states; see the seeding note below.
+* Only 9-10 of the 16 seeded states survived relaxation in this run.  Cause:
+  the soft mask puts 12.5 % of Ms into the cell just outside every interface,
+  those cells carried no seed and were filled with the island axis direction,
+  so a uniform "cap" sat on every seeded vortex and steered the relaxation
+  (2 states lost on the nominal grid, 7 with the taller grid of the design
+  loop).  The driver now dilates the seed texture into the fractional cells;
+  all 16 states then relax as seeded in every setup (hard mask, soft mask,
+  soft mask with headroom).  The run is being repeated with the fix.
 
 ## What to do with it
 
