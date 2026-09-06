@@ -1,0 +1,176 @@
+[
+ {
+  "size": [
+   8,
+   8
+  ],
+  "disorder": 0.05,
+  "alpha": 0.01,
+  "protocol": "alternating",
+  "angle": 45.0,
+  "window": [
+   1.2,
+   2.2
+  ],
+  "spins": 144,
+  "R2": [
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.02,
+   -0.02
+  ],
+  "MC": 0.0,
+  "distinct_states_2nd_half": 1.5,
+  "mean_flips": 11.112
+ },
+ {
+  "size": [
+   8,
+   8
+  ],
+  "disorder": 0.1,
+  "alpha": 0.01,
+  "protocol": "alternating",
+  "angle": 45.0,
+  "window": [
+   1.2,
+   2.2
+  ],
+  "spins": 144,
+  "R2": [
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01
+  ],
+  "MC": 0.0,
+  "distinct_states_2nd_half": 1.0,
+  "mean_flips": 0.32
+ },
+ {
+  "size": [
+   8,
+   8
+  ],
+  "disorder": 0.05,
+  "alpha": 0.01,
+  "protocol": "leak",
+  "angle": 45.0,
+  "window": [
+   1.2,
+   2.2
+  ],
+  "spins": 144,
+  "R2": [
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01
+  ],
+  "MC": 0.0,
+  "distinct_states_2nd_half": 1.0,
+  "mean_flips": 0.126
+ },
+ {
+  "size": [
+   8,
+   8
+  ],
+  "disorder": 0.1,
+  "alpha": 0.01,
+  "protocol": "leak",
+  "angle": 45.0,
+  "window": [
+   1.2,
+   2.2
+  ],
+  "spins": 144,
+  "R2": [
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.01
+  ],
+  "MC": 0.0,
+  "distinct_states_2nd_half": 1.0,
+  "mean_flips": 0.222
+ },
+ {
+  "size": [
+   8,
+   8
+  ],
+  "disorder": 0.05,
+  "alpha": 0.01,
+  "protocol": "rotate",
+  "angle": 45.0,
+  "window": [
+   1.2,
+   2.2
+  ],
+  "spins": 144,
+  "R2": [
+   -0.01,
+   -0.0,
+   -0.0,
+   -0.01,
+   -0.01,
+   -0.01,
+   -0.0,
+   -0.01,
+   -0.01
+  ],
+  "MC": 0.0,
+  "distinct_states_2nd_half": 1.0,
+  "mean_flips": 1.186
+ },
+ {
+  "size": [
+   8,
+   8
+  ],
+  "disorder": 0.1,
+  "alpha": 0.01,
+  "protocol": "rotate",
+  "angle": 45.0,
+  "window": [
+   1.2,
+   2.2
+  ],
+  "spins": 144,
+  "R2": [
+   -0.44,
+   -0.41,
+   -0.19,
+   0.0,
+   -0.01,
+   0.0,
+   -0.03,
+   -0.04,
+   -0.01
+  ],
+  "MC": 0.006601217452680552,
+  "distinct_states_2nd_half": 3.5,
+  "mean_flips": 2.14
+ }
+]

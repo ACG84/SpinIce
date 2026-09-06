@@ -364,6 +364,40 @@ switching field through the vertex field by several mT, so the same input
 does different things depending on the microstate.  That is the unit-cell
 (45 deg drive) test, running now with the coercive model.
 
+## Lattice-scale memory with flatspin (macrospin ASI, CPU)
+
+`scripts/flatspin_rc.py` drives a flatspin lattice (Stoner-Wohlfarth switching,
+dipolar coupling `alpha`, quenched disorder of the coercive field) with the
+same field-loop protocols and reads the spin vector into a ridge readout.
+Square ASI, 8 x 8 cells (144 spins), hc = 30 mT, window in units of hc,
+drive at 45 deg, 500 steps, 2 seeds.  The window has to sit between the
+field that anneals the lattice into a frozen state (~1 hc) and the field that
+saturates it every step (~2.5 hc):
+
+| alpha (dipolar field) | protocol | disorder | R^2(k = 0, 1, 2) | MC | flips / step | distinct states |
+|---|---|---|---|---|---|---|
+| 0.005 (~15 mT) | leak, window 1.2-2.2 | 0.05 | 0.63, 0.26, 0.16 | 1.08 | 34 | 18 |
+| 0.005 | leak, window 1.5-2.5 | 0.05 | 0.80, 0.25, 0.08 | 1.13 | 59 | 20 |
+| 0.005 | leak, window 1.5-2.5 | 0.10 | 0.76, 0.23, 0 | 0.99 | 60 | 22 |
+| 0.005 | alternating / rotate | any | < 0 | 0 | 8-110 | 18-64 |
+| 0.01 (~30 mT) | any | any | 0 | 0 | 0-11 | 1-4 (frozen) |
+
+* This is the first fading memory in the whole study: R^2(1) = 0.25 and
+  R^2(2) up to 0.16 from a lattice whose islands switch in cascades of 30-60
+  flips per step.  It appears only with the random-leak protocol (the
+  stochastic partial reset), only when the dipolar field is a sizeable
+  fraction of the coercive field (0.005: ~15 mT vs 30 mT; 0.01 freezes the
+  lattice, 0.1 locks it completely), and it is a collective effect: the same
+  protocol on one island or one unit cell gives R^2(k >= 1) = 0.
+* The alternating and rotating drives visit many states but their state
+  vectors carry no linear memory of the amplitude (negative test R^2 =
+  non-stationary readout), so the protocol matters as much as the lattice.
+* Cost: seconds per run, so lattice size, disorder, coupling and protocol
+  can be scanned freely; the next steps are the size/disorder scan, FORCE
+  on the lattice, and mapping the multilayer islands onto it (each layer a
+  spin with the coercive field from our sweeps, intra-island coupling from
+  the catalogue levels).
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
