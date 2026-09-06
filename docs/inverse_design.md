@@ -333,6 +333,13 @@ dE/|dM| (`transition_matrix(..., barrier=[B_c per layer])`).
 | 2-layer | window 5-56, leak 29 +- 4, bias 0 | 0.67 | 0.01 | 1.2 |
 | 3-layer | window 5-84, leak 54, bias -3 | 0.81 | 0.01 | 2.3 |
 | 3-layer, stochastic reset of the 25 nm layer (leak 48 +- 6) | | 0.57 | 0.04 | 2.2 |
+| 2-island unit cell, 45 deg drive, 253 states (GPU catalogue, coercive model) | window 5-53, leak 25 +- 6, bias 0 | 0.70 | 0.00 | 2.5 |
+
+Sanity checks of the metric: a synthetic state that encodes the quantised
+previous input gives R^2(1) = 0.99; a single threshold bit with stochastic
+reset (the "max filter" of a persistent layer) gives R^2(0) = 0.2-0.6 and
+R^2(1) < 0.02 for any reset probability, so the absence of memory is a
+property of threshold-latch encoders, not of the estimator.
 
 More layers raise the lag-0 encoding (more thresholds inside the window) but
 still give no memory beyond the current input.  The reason is structural for a
