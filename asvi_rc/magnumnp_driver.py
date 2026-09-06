@@ -96,7 +96,7 @@ class SoftGeometry:
         import torch
         Lx, Ly = self.p.box
         cx, cy = isl.cx, isl.cy
-        if isl.layer == 1:
+        if isl.layer == 1:                                   # the top-layer offset is a design parameter
             cx = cx - self.p.top_offset[0] + self.par("offset_x")
             cy = cy - self.p.top_offset[1] + self.par("offset_y")
         dx = torch.remainder(self.xx - cx + Lx / 2, Lx) - Lx / 2
@@ -121,7 +121,12 @@ class SoftGeometry:
         even when the interface sits exactly on a cell boundary."""
         import torch
         tb, ts, tt = self.par("t_bottom"), self.par("t_spacer"), self.par("t_top")
-        z0, z1 = (0.0 * tb, tb) if layer == 0 else (tb + ts, tb + ts + tt)
+        bounds = [(0.0 * tb, tb), (tb + ts, tb + ts + tt)]
+        z = tb + ts + tt
+        for sp, t in self.p.extra_layers:                    # extra layers ride on top of the design stack
+            bounds.append((z + sp, z + sp + t))
+            z = z + sp + t
+        z0, z1 = bounds[layer]
         w = 2 * self.eps_z
         return _ramp(z0 - self.zz, w) * _ramp(self.zz - z1, w)
 

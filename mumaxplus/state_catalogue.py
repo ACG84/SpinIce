@@ -58,6 +58,8 @@ def main(argv=None):
     ap.add_argument("--length", type=float, default=None, help="island length (m), default 550e-9")
     ap.add_argument("--t-top", type=float, default=None, help="top NiFe thickness (m), default 20e-9")
     ap.add_argument("--t-bottom", type=float, default=None, help="bottom NiFe thickness (m), default 30e-9")
+    ap.add_argument("--extra-layers", type=float, nargs="+", default=None,
+                    help="further (spacer, NiFe) thickness pairs above the top layer, e.g. 35e-9 15e-9")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--bias", type=float, nargs=2, default=(0.0, 0.0), help="applied field Bx By (T)")
     ap.add_argument("--fast", action="store_true", help="minimize() instead of relax()")
@@ -80,6 +82,9 @@ def main(argv=None):
                       ("t_top", a.t_top), ("t_bottom", a.t_bottom)):
         if val is not None:
             setattr(p, attr, val)
+    if a.extra_layers:
+        assert len(a.extra_layers) % 2 == 0, "--extra-layers takes (spacer, thickness) pairs"
+        p.extra_layers = tuple(zip(a.extra_layers[0::2], a.extra_layers[1::2]))
     if a.unit == "single":
         p.box_override = tuple(a.box)
         p.pbc_repetitions = (0, 0, 0)
@@ -93,10 +98,11 @@ def main(argv=None):
     sim.set_field((a.bias[0], a.bias[1], 0.0))
 
     if a.closure_only:
-        n = len(sim.islands)
+        n, L = len(sim.islands), p.n_layers
+        alt = tuple(("+-" * L)[:L]); alt2 = tuple(("-+" * L)[:L])
         combos = [tuple("+" * n), tuple("-" * n),
-                  tuple("+-" * (n // 2)), tuple("-+" * (n // 2)),          # antiparallel stacks
-                  tuple(("+-" if (i // 2) % 2 == 0 else "-+")[i % 2] for i in range(n))]  # alternating islands
+                  alt * (n // L), alt2 * (n // L),                          # antiparallel stacks
+                  tuple(x for k in range(n // L) for x in (alt if k % 2 == 0 else alt2))]  # alternating islands
         combos = list(dict.fromkeys(combos))
     else:
         combos = list(itertools.product(STATES, repeat=len(sim.islands)))

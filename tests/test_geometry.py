@@ -71,3 +71,21 @@ def test_magnetization_helpers():
     mv = vortex_magnetization(p, regions, islands, chirality={2: 1})
     assert np.allclose(np.linalg.norm(mv, axis=0)[mask], 1)
     assert abs(mv[0][regions == 2].mean()) < 0.1 and abs(mv[1][regions == 2].mean()) < 0.1
+
+
+def test_three_layer_stack_geometry():
+    from asvi_rc import ASVIParams
+    from asvi_rc.geometry import single_island, build_geometry, build_islands
+    p = ASVIParams(cell_xy=10e-9, cell_z=5e-9, disorder_sigma=0.0, box_override=(640e-9, 320e-9),
+                   pbc_repetitions=(0, 0, 0), extra_layers=((35e-9, 15e-9),))
+    assert p.n_layers == 3 and p.thickness == 30e-9 + 35e-9 + 20e-9 + 35e-9 + 15e-9
+    assert p.z_layers == ((0, 6), (13, 17), (24, 27))
+    assert p.layer_offsets[2][1] > p.top_offset[1]                 # shadow offset grows with height
+    isl = single_island(p)
+    assert [i.region for i in isl] == [1, 2, 3]
+    mask, regions, _ = build_geometry(p, isl)
+    assert mask.shape[0] == 27 and set(np.unique(regions)) == {0, 1, 2, 3}
+    assert regions[25].max() == 3 and regions[15].max() == 2 and regions[3].max() == 1
+    # two-layer default unchanged, unit cell numbering cycles through the stack
+    q = ASVIParams(cell_xy=10e-9, cell_z=5e-9, disorder_sigma=0.0, n_cells=(1, 1))
+    assert [i.region for i in build_islands(q)] == [1, 2, 3, 4] and q.n_layers == 2

@@ -32,6 +32,11 @@ class ASVIParams:
     t_spacer: float = 35e-9            # non-magnetic Al spacer
     t_top: float = 20e-9               # "soft" top NiFe layer
     top_offset: tuple[float, float] = (0.0, 50e-9)  # lateral shift of the top layer (x, y)
+    # further (spacer, NiFe) pairs stacked above the top layer, bottom -> top, e.g. ((35e-9, 15e-9),);
+    # their lateral shift follows the shadow-deposition rule (proportional to height) unless
+    # extra_offsets gives explicit (x, y) shifts
+    extra_layers: tuple[tuple[float, float], ...] = ()
+    extra_offsets: tuple[tuple[float, float], ...] | None = None
     # --- lattice ----------------------------------------------------------------------
     vertex_gap: float = 125e-9         # island end -> vertex centre
     n_cells: tuple[int, int] = (2, 2)  # supercell size in unit cells (each unit cell = 2 islands)
@@ -70,8 +75,41 @@ class ASVIParams:
         return (self.n_cells[0] * a, self.n_cells[1] * a)
 
     @property
+    def n_layers(self) -> int:
+        return 2 + len(self.extra_layers)
+
+    @property
+    def layer_thicknesses(self) -> tuple[float, ...]:
+        return (self.t_bottom, self.t_top) + tuple(t for _, t in self.extra_layers)
+
+    @property
+    def layer_bounds(self) -> tuple[tuple[float, float], ...]:
+        """(z0, z1) of every magnetic layer, bottom -> top (m)."""
+        out = [(0.0, self.t_bottom), (self.t_bottom + self.t_spacer, self.t_bottom + self.t_spacer + self.t_top)]
+        z = out[-1][1]
+        for sp, t in self.extra_layers:
+            out.append((z + sp, z + sp + t))
+            z += sp + t
+        return tuple(out)
+
+    @property
+    def layer_offsets(self) -> tuple[tuple[float, float], ...]:
+        """Lateral (x, y) shift of every layer: 0 for the bottom, top_offset for the top, and for
+        extra layers proportional to their height (shadow deposition) unless extra_offsets is set."""
+        out = [(0.0, 0.0), tuple(self.top_offset)]
+        zb = self.layer_bounds
+        z_top = 0.5 * (zb[1][0] + zb[1][1])
+        for i, (z0, z1) in enumerate(zb[2:]):
+            if self.extra_offsets is not None:
+                out.append(tuple(self.extra_offsets[i]))
+            else:
+                f = 0.5 * (z0 + z1) / z_top
+                out.append((self.top_offset[0] * f, self.top_offset[1] * f))
+        return tuple(out)
+
+    @property
     def thickness(self) -> float:
-        return self.t_bottom + self.t_spacer + self.t_top
+        return self.layer_bounds[-1][1]
 
     @property
     def grid(self) -> tuple[int, int, int]:
@@ -82,19 +120,23 @@ class ASVIParams:
         nz = _commensurate(self.thickness, self.cell_z, "stack thickness")
         for name, t in (("t_bottom", self.t_bottom), ("t_spacer", self.t_spacer), ("t_top", self.t_top)):
             _commensurate(t, self.cell_z, name)
+        for i, (sp, t) in enumerate(self.extra_layers):
+            _commensurate(sp, self.cell_z, f"extra spacer {i}")
+            _commensurate(t, self.cell_z, f"extra layer {i}")
         return nx, ny, nz
 
     @property
-    def z_layers(self) -> tuple[tuple[int, int], tuple[int, int]]:
-        """Cell index ranges [start, stop) of (bottom, top) magnetic layers."""
-        kb = int(round(self.t_bottom / self.cell_z))
-        ks = int(round(self.t_spacer / self.cell_z))
-        kt = int(round(self.t_top / self.cell_z))
-        return (0, kb), (kb + ks, kb + ks + kt)
+    def z_layers(self) -> tuple[tuple[int, int], ...]:
+        """Cell index ranges [start, stop) of every magnetic layer, bottom -> top."""
+        return tuple((int(round(z0 / self.cell_z)), int(round(z1 / self.cell_z))) for z0, z1 in self.layer_bounds)
 
     @property
     def n_islands(self) -> int:
         return 2 * self.n_cells[0] * self.n_cells[1]
+
+    @property
+    def n_regions(self) -> int:
+        return self.n_layers * self.n_islands
 
     @property
     def fmr_nt(self) -> int:
@@ -109,6 +151,9 @@ class ASVIParams:
         for k in ("top_offset", "n_cells", "pbc_repetitions", "box_override"):
             if k in d and d[k] is not None:
                 d[k] = tuple(d[k])
+        for k in ("extra_layers", "extra_offsets"):
+            if k in d and d[k] is not None:
+                d[k] = tuple(tuple(x) for x in d[k])
         return cls(**d)
 
     def save(self, path):

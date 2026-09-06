@@ -29,6 +29,7 @@ class Island:
     angle_deg: float           # 0 -> long axis along x, 90 -> along y
     length: float
     width: float
+    n_layers: int = 2          # layers per 3D island (sets the region numbering)
 
     @property
     def axis(self) -> tuple[float, float]:
@@ -37,15 +38,15 @@ class Island:
 
     @property
     def region(self) -> int:
-        return region_id(self.index, self.layer)
+        return region_id(self.index, self.layer, self.n_layers)
 
     def to_dict(self) -> dict:
         return asdict(self)
 
 
-def region_id(island_index: int, layer: int) -> int:
+def region_id(island_index: int, layer: int, n_layers: int = 2) -> int:
     """Region id used in mumax3/mumax+ (0 is reserved for 'no region')."""
-    return 1 + 2 * island_index + layer
+    return 1 + n_layers * island_index + layer
 
 
 def build_islands(p: ASVIParams, rng: np.random.Generator | None = None) -> list[Island]:
@@ -69,9 +70,8 @@ def build_islands(p: ASVIParams, rng: np.random.Generator | None = None) -> list
                 # quenched disorder: both layers share the footprint
                 L = p.length * (1 + p.disorder_sigma * rng.standard_normal())
                 W = p.width * (1 + p.disorder_sigma * rng.standard_normal())
-                for layer in (0, 1):
-                    dx, dy = (0.0, 0.0) if layer == 0 else p.top_offset
-                    islands.append(Island(idx, layer, cx + dx, cy + dy, ang, L, W))
+                for layer, (dx, dy) in enumerate(p.layer_offsets):
+                    islands.append(Island(idx, layer, cx + dx, cy + dy, ang, L, W, p.n_layers))
                 idx += 1
     return islands
 
@@ -80,9 +80,8 @@ def single_island(p: ASVIParams, angle_deg: float = 0.0) -> list[Island]:
     """Both layers of one 3D island centred in the box (use with p.box_override, no PBC)."""
     bx, by = p.box
     out = []
-    for layer in (0, 1):
-        dx, dy = (0.0, 0.0) if layer == 0 else p.top_offset
-        out.append(Island(0, layer, bx / 2 + dx, by / 2 + dy, angle_deg, p.length, p.width))
+    for layer, (dx, dy) in enumerate(p.layer_offsets):
+        out.append(Island(0, layer, bx / 2 + dx, by / 2 + dy, angle_deg, p.length, p.width, p.n_layers))
     return out
 
 
@@ -159,12 +158,12 @@ def build_geometry(p: ASVIParams, islands: list[Island] | None = None):
         islands = build_islands(p)
     nx, ny, nz = p.grid
     xx, yy = lateral_meshgrid(p)
-    (b0, b1), (t0, t1) = p.z_layers
+    zl = p.z_layers
     mask = np.zeros((nz, ny, nx), dtype=bool)
     regions = np.zeros((nz, ny, nx), dtype=np.int32)
     for isl in islands:
         m2 = island_mask_2d(xx, yy, isl, p.box, p.rounded_ends)
-        k0, k1 = (b0, b1) if isl.layer == 0 else (t0, t1)
+        k0, k1 = zl[isl.layer]
         if np.any(mask[k0:k1] & m2[None]):
             raise ValueError(f"island {isl.index} layer {isl.layer} overlaps another island")
         mask[k0:k1] |= m2[None]
@@ -244,10 +243,11 @@ def describe(p: ASVIParams, islands: list[Island]) -> str:
     lines = [
         f"box {p.box[0]*1e9:.0f} x {p.box[1]*1e9:.0f} nm, grid {nx} x {ny} x {nz}"
         f" (cell {p.cell_xy*1e9:g} x {p.cell_xy*1e9:g} x {p.cell_z*1e9:g} nm)",
-        f"{p.n_islands} 3D islands, {len(islands)} magnetic layer-islands, regions 1..{2*p.n_islands}",
+        f"{p.n_islands} 3D islands, {len(islands)} magnetic layer-islands, regions 1..{p.n_regions}",
     ]
     for isl in islands:
-        lines.append(f"  region {isl.region:2d}: island {isl.index} {LAYERS[isl.layer]:6s} "
+        lname = LAYERS[isl.layer] if p.n_layers == 2 else f"layer{isl.layer}"
+        lines.append(f"  region {isl.region:2d}: island {isl.index} {lname:6s} "
                      f"centre ({isl.cx*1e9:6.1f},{isl.cy*1e9:6.1f}) nm angle {isl.angle_deg:3.0f} "
                      f"L {isl.length*1e9:5.1f} W {isl.width*1e9:5.1f} nm")
     return "\n".join(lines)

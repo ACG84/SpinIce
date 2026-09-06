@@ -25,8 +25,7 @@ from asvi_rc import ASVIParams   # noqa: E402
 def layer_moment(p: ASVIParams, layer: int) -> float:
     """Saturation moment (A m^2) of one layer of a stadium island."""
     area = (p.length - p.width) * p.width + math.pi * (p.width / 2) ** 2 if p.rounded_ends else p.length * p.width
-    t = p.t_bottom if layer == 0 else p.t_top
-    return p.msat * area * t
+    return p.msat * area * p.layer_thicknesses[layer]
 
 
 def analyse(path, window_mT=None):
@@ -42,7 +41,7 @@ def analyse(path, window_mT=None):
     states = sorted(best.values(), key=lambda r: r["energy_J"])
     e0 = states[0]["energy_J"]
     n_layers = len(states[0]["final"])
-    moments = [layer_moment(p, j % 2) for j in range(n_layers)]      # regions alternate bottom/top
+    moments = [layer_moment(p, j % p.n_layers) for j in range(n_layers)]   # regions cycle through the stack
     M = np.array([sum(m_ax * mom for m_ax, mom in zip(r["m_axis"], moments)) for r in states])  # A m^2 along axis
     dE = np.array([r["energy_J"] - e0 for r in states])
     # degenerate ground states (e.g. +/- and -/+): refer each state to the ground state it
