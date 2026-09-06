@@ -282,6 +282,7 @@ NARMA-2, autonomous sine generation.
 |---|---|---|---|---|---|---|
 | single island, 16 states (soft, sampled) | 5-55 mT, leak 33.8, bias 0 | 0.55 | 0.00 | 0.00 | 0.00 | none (g = 0.3, 0.6, 1.0) |
 | unit cell, GPU 45 deg table (11 states, 8 mT grid) | 31-47 / 40-56 mT, leak 39-48 +- 8, bias -20 | 0.00 | 0.00 | 0.00 | 0.00 | none: stuck in one state |
+| 3-layer island, 64 states (soft, sampled, coercive model) | 5-84 mT, leak 54, bias -3 | 0.77 | 0.00 | 0.00 | 0.00 | feedback lowers lag-0 (0.67 at g = 0.3, 0.27 at g = 1), no memory gained |
 
 * Feedback cannot create memory where the open loop has none: on the single
   island the fed-back output only modulates a one-bit write that the leak
