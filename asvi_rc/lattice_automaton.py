@@ -47,7 +47,7 @@ def load_landscape(catalogue_path):
 
 class ASVILattice:
     def __init__(self, catalogue, coercive, n_cells=(4, 4), lattice_constant=None, width_T=2e-3,
-                 charge_pos=0.87, seed=0, pbc=False):
+                 charge_pos=0.87, seed=0, pbc=False, disorder=0.0):
         """coercive: per-layer coercive fields (T) along the island axis; the angular dependence follows
         the Stoner-Wohlfarth astroid, B_c(theta) = B_c / (|cos|^(2/3) + |sin|^(2/3))^(3/2) (0.5 B_c at 45 deg).
         lattice_constant overrides the catalogue's length + 2 vertex_gap.  charge_pos: charge position
@@ -66,6 +66,8 @@ class ASVILattice:
         self.rng = np.random.default_rng(seed)
         layers = build_islands(p)
         self.n = p.n_islands
+        # quenched disorder: per-island multiplicative spread of the coercive fields
+        self.bc_scale = 1.0 + disorder * self.rng.standard_normal(self.n)
         # island geometry: centre, axis, per-layer offsets
         self.centre = np.zeros((self.n, 2)); self.axis = np.zeros((self.n, 2))
         self.layer_off = np.zeros((self.n, self.L, 2))
@@ -139,7 +141,7 @@ class ASVILattice:
                 dM = self.Mtot[j] - self.Mtot[s]
                 dQ = self.Qs[j] - self.Qs[s]
                 g = -dE + dM * Bax[i] - dQ @ Phi[i]
-                bar = self.Bc[l] * astro[i] * abs(self.M_layer[j, l] - self.M_layer[s, l])
+                bar = self.Bc[l] * self.bc_scale[i] * astro[i] * abs(self.M_layer[j, l] - self.M_layer[s, l])
                 rows.append((j, l, g, bar))
             out.append(rows)
         return out

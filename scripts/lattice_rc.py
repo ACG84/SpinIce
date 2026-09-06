@@ -20,7 +20,7 @@ from scripts.flatspin_rc import ridge_r2                                       #
 
 
 def run(a, lattice_constant, seed):
-    lat = ASVILattice(a.catalogue, a.coercive, tuple(a.cells), lattice_constant, a.width, seed=seed)
+    lat = ASVILattice(a.catalogue, a.coercive, tuple(a.cells), lattice_constant, a.width, seed=seed, disorder=a.disorder)
     rng = np.random.default_rng(100 + seed)
     u = rng.random(a.n)
     d = np.array([np.cos(np.radians(a.angle)), np.sin(np.radians(a.angle))])
@@ -34,7 +34,7 @@ def run(a, lattice_constant, seed):
         lat.relax(a.bias * d, sample=not a.deterministic)
         feats.append(lat.features(a.features)); keys.append(lat.state_key())
     X = np.array(feats)
-    r2, mc = ridge_r2(X, u, k_max=8)
+    r2, mc = ridge_r2(X, u, k_max=8, alpha=a.ridge)
     return {"a_nm": lat.a * 1e9, "islands": lat.n, "states_per_island": lat.K, "R2": r2.round(3).tolist(), "MC": mc,
             "flips": float(np.mean(flips)), "distinct": len(set(keys[a.n // 2:])),
             "vortex_frac": float(np.mean([f[-lat.n:].mean() for f in feats])) if a.features == "moment" else None,
@@ -53,9 +53,11 @@ def main(argv=None):
     ap.add_argument("--leak", type=float, default=40e-3); ap.add_argument("--jitter", type=float, default=5e-3)
     ap.add_argument("--bias", type=float, default=0.0)
     ap.add_argument("--width", type=float, default=2e-3)
+    ap.add_argument("--disorder", type=float, default=0.05, help="relative spread of the per-island coercive fields")
+    ap.add_argument("--ridge", type=float, default=1.0, help="ridge regularisation (features are O(1))")
     ap.add_argument("--features", choices=["moment", "onehot"], default="moment")
     ap.add_argument("--deterministic", action="store_true")
-    ap.add_argument("--n", type=int, default=400)
+    ap.add_argument("--n", type=int, default=1200)
     ap.add_argument("--seeds", type=int, default=2)
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
