@@ -316,6 +316,15 @@ structure of the colleague's criterion (six macrospin states within 6 aJ
 instead of one 28 aJ gap) and a graded switching-field hierarchy, at 57k cells
 against 109k cells for the two-island unit cell (256 states).
 
+### 4-layer island (30 / 25 / 20 / 15 nm): not viable as configured
+
+With the shadow-offset rule the fourth layer sits 121 nm off the first, and the
+two seeds that finished took 56 min and 2.2 h each (the minimiser crawls on
+the weakly coupled, barely overlapping thin top layer); 256 seeds would take
+days, so the run was stopped.  To retry: `extra_offsets` at 50 nm for all
+layers, a capped minimiser, and only the macrospin + single-vortex subset of
+seeds.
+
 ### Proxy revision: per-layer coercive fields
 
 The 3-layer sweep exposed a flaw of the one-barrier switching rule: with one
