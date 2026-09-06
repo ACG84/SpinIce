@@ -12,8 +12,21 @@ M = torch.tensor([0.57, -0.57, 2.75, -2.75, 1.54, -1.54, 0.99, -0.99], dtype=tor
 
 
 def test_neighbours_single_layer_changes():
-    pairs = neighbours(STATES)
+    pairs = [(i, j) for i, j, _ in neighbours(STATES)]
     assert (0, 2) in pairs and (0, 4) in pairs and (0, 1) not in pairs
+    assert all(l in (0, 1) for _, _, l in neighbours(STATES))
+
+
+def test_per_layer_coercive_fields_order_the_switching():
+    # labels are (bottom, top); with coercive fields (bottom 50 mT, top 20 mT) the top layer
+    # switches first: +/- -> +/+ needs 20 mT + dE/dM = 32.7 mT, -/+ -> +/+ needs 50 + 8.3 mT
+    P40 = transition_matrix(E, M, STATES, 40e-3, [50e-3, 20e-3], 2e-3)
+    P70 = transition_matrix(E, M, STATES, 70e-3, [50e-3, 20e-3], 2e-3)
+    pp = STATES.index(("+", "+"))
+    assert float(P40[STATES.index(("+", "-")), pp]) > 0.5          # top flips at 40 mT
+    assert float(P40[STATES.index(("-", "+")), pp]) < 0.01         # bottom does not
+    assert float(P70[STATES.index(("-", "+")), pp]) > 0.5          # bottom flips at 70 mT
+    assert torch.allclose(P70.sum(1), torch.ones(8, dtype=torch.float64))
 
 
 def test_transition_matrix_is_row_stochastic_and_field_dependent():

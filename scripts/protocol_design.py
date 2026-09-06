@@ -67,6 +67,8 @@ def main(argv=None):
     ap.add_argument("--steps", type=int, default=30)
     ap.add_argument("--lr", type=float, default=1e-3, help="max field change per step (T)")
     ap.add_argument("--barrier", type=float, default=70e-18)
+    ap.add_argument("--coercive", type=float, nargs="+", default=None,
+                    help="per-layer coercive fields (T) instead of one barrier energy")
     ap.add_argument("--width", type=float, default=2e-3)
     ap.add_argument("--n-steps", type=int, default=400)
     ap.add_argument("--k-max", type=int, default=8)
@@ -83,7 +85,7 @@ def main(argv=None):
     lr, best = a.lr, -np.inf
     for step in range(a.steps + 1):
         mc, r2, rho = memory_proxy(E, M, states, n_steps=a.n_steps, stages=stages_from(pr, a.protocol),
-                                   barrier=a.barrier, width=a.width, k_max=a.k_max)
+                                   barrier=a.coercive if a.coercive else a.barrier, width=a.width, k_max=a.k_max)
         g = torch.autograd.grad(mc, [pr[k] for k in a.free], allow_unused=True)
         g = {k: (0.0 if x is None else float(x)) for k, x in zip(a.free, g)}
         occ = rho.detach().mean(0).numpy()

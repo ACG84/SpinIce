@@ -27,6 +27,8 @@ def main(argv=None):
     ap.add_argument("--catalogue", type=str, default=None, help="catalogue.json (soft automaton, sampled)")
     ap.add_argument("--angle", type=float, default=1.0)
     ap.add_argument("--barrier", type=float, default=70e-18)
+    ap.add_argument("--coercive", type=float, nargs="+", default=None,
+                    help="per-layer coercive fields (T) instead of one barrier energy")
     ap.add_argument("--width", type=float, default=2e-3)
     ap.add_argument("--protocol", nargs=5, type=float, default=(25.2e-3, 29.9e-3, 33.4e-3, 1.2e-3, -26.8e-3),
                     metavar=("B_MIN", "B_MAX", "LEAK", "JITTER", "BIAS"))
@@ -44,7 +46,7 @@ def main(argv=None):
         print(f"table automaton: {len(tab['states'])} states, amplitudes {tab['amplitudes_T']}")
     else:
         states, E, M = landscape(a.catalogue, a.angle)
-        make_res = lambda seed: SoftReservoir(E, M, states, a.barrier, a.width, seed=seed)
+        make_res = lambda seed: SoftReservoir(E, M, states, a.coercive if a.coercive else a.barrier, a.width, seed=seed)
         print(f"soft automaton: {len(states)} states, drive {a.angle:g} deg")
     print("protocol (mT):", {k: round(v * 1e3, 1) for k, v in proto.items()})
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)

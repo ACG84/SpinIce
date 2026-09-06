@@ -33,24 +33,37 @@ import numpy as np
 
 
 def neighbours(states):
-    """Pairs (i, j) of states that differ in exactly one layer label."""
+    """Triples (i, j, layer) of states that differ in exactly one layer label."""
     out = []
     for i, a in enumerate(states):
         for j, b in enumerate(states):
-            if i != j and sum(x != y for x, y in zip(a, b)) == 1:
-                out.append((i, j))
+            diff = [k for k, (x, y) in enumerate(zip(a, b)) if x != y]
+            if i != j and len(diff) == 1:
+                out.append((i, j, diff[0]))
     return out
 
 
 def transition_matrix(E, M, states, B, barrier, width, cascade=3, pairs=None):
-    """(N, N) row-stochastic transition matrix at field B (scalar torch or float, tesla)."""
+    """(N, N) row-stochastic transition matrix at field B (scalar torch or float, tesla).
+
+    barrier : either one energy (J) for every transition, or a sequence of per-layer coercive
+              fields (T): the switch of layer l then needs the Zeeman gain to exceed
+              B_c[l] * |dM| (a thickness-dependent barrier, calibrated from a hysteresis sweep).
+    """
     import torch
     n = len(states)
     pairs = neighbours(states) if pairs is None else pairs
-    ii = torch.tensor([i for i, _ in pairs]); jj = torch.tensor([j for _, j in pairs])
+    ii = torch.tensor([i for i, _, _ in pairs]); jj = torch.tensor([j for _, j, _ in pairs])
+    ll = torch.tensor([l for _, _, l in pairs])
     dE = E[jj] - E[ii]
     dM = M[jj] - M[ii]
-    p = torch.sigmoid((dM * B - dE - barrier) / (dM.abs() * width + 1e-30))
+    if np.ndim(barrier) == 0:
+        bar = barrier
+    else:
+        n_layers = len(barrier)
+        bc = torch.as_tensor(np.asarray(barrier, dtype=float), dtype=E.dtype)
+        bar = bc[ll % n_layers] * dM.abs()
+    p = torch.sigmoid((dM * B - dE - bar) / (dM.abs() * width + 1e-30))
     P = torch.zeros(n, n, dtype=E.dtype).index_put((ii, jj), p)
     row = P.sum(dim=1)
     P = P / torch.clamp(row, min=1.0)[:, None]                  # competing switches share the probability
