@@ -398,6 +398,32 @@ saturates it every step (~2.5 hc):
   spin with the coercive field from our sweeps, intra-island coupling from
   the catalogue levels).
 
+### Lattice size, disorder and coupling (leak protocol, window 1.5-2.5 hc, alpha 0.005)
+
+| lattice | spins | R^2(0) | R^2(1) | R^2(2) | MC | flips / step |
+|---|---|---|---|---|---|---|
+| 4 x 4 | 40 | 0.79 | 0.22 | 0.00 | 1.01 | 15 |
+| 8 x 8 | 144 | 0.80 | 0.25 | 0.08 | 1.13 | 59 |
+| 12 x 12 | 312 | 0.77 | 0.30 | 0.13 | 1.24 | 122 |
+| 16 x 16 (2 % disorder, 1 seed) | 544 | 0.79 | 0.18 | 0.00 | 1.08 | 199 |
+
+* Memory grows slowly with size (about +0.1 MC per doubling up to 12 x 12) and
+  not beyond; the decay from lag 1 to lag 2 (ratio 0.3-0.4) is set by the
+  fraction of spins rewritten every step, ~40 % for every size.  A ten-frame
+  memory needs that fraction near 10-15 %, which is a protocol / disorder
+  question, not a size question (scan below).
+* Disorder 2-10 % changes little; 20 % makes the readout non-stationary
+  (negative test R^2 at long lags on 12 x 12).
+* Coupling is a narrow window: alpha 0.003 (dipolar ~9 mT) saturates the
+  lattice every step (99 of 144 flips, one state, no memory), 0.005 (~15 mT)
+  gives the cascades above, 0.007 (~21 mT) nearly freezes it (9 flips, no
+  memory).  In island terms: the neighbour field must be about half the
+  coercive field.
+* FORCE on the 8 x 8 lattice (online RLS, 1200 steps): open-loop recall
+  R^2 = 0.82 / 0.30 / 0.11 / 0.02 at lags 0-3, matching the ridge readout;
+  feedback into the amplitude lowers every value (lag-1: 0.30 -> 0.23 -> 0.11
+  at g = 0.2, 0.5).
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
