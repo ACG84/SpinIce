@@ -21,14 +21,19 @@ from scripts.flatspin_rc import ridge_r2                                       #
 
 def run(a, lattice_constant, seed):
     lat = ASVILattice(a.catalogue, a.coercive, tuple(a.cells), lattice_constant, a.width, seed=seed, disorder=a.disorder,
-                      coupling=a.coupling)
+                      coupling=a.coupling, switching=a.switching)
     rng = np.random.default_rng(100 + seed)
     u = rng.random(a.n)
     d = np.array([np.cos(np.radians(a.angle)), np.sin(np.radians(a.angle))])
     feats, flips, keys = [], [], []
     t0 = time.time()
     lat.reset(); cf = lat.coupling_field()
-    print(f"  coupling field (ground state): mean |B| {np.abs(cf).mean()*1e3:.1f} mT, max {np.abs(cf).max()*1e3:.1f} mT", flush=True)
+    lat.relax(0.2 * d, sample=False); sf = lat.stray_field()                     # polarised along the drive
+    spar = np.abs(np.einsum('ik,ik->i', lat.axis, sf)); sperp = np.abs(sf[:, 0] * lat.axis[:, 1] - sf[:, 1] * lat.axis[:, 0])
+    if seed == 0:
+        print(f"  coupling: ground-state axial equivalent {np.abs(cf).mean()*1e3:.1f} mT; polarised stray field "
+              f"|B_par| {spar.mean()*1e3:.1f} mT, |B_perp| {sperp.mean()*1e3:.1f} mT (max {sperp.max()*1e3:.1f})", flush=True)
+    lat.reset()
     for t in range(a.n):
         L = a.leak + a.jitter * rng.uniform(-1, 1)
         lat.relax(-L * d, sample=not a.deterministic)
@@ -58,6 +63,8 @@ def main(argv=None):
     ap.add_argument("--width", type=float, default=2e-3)
     ap.add_argument("--disorder", type=float, default=0.05, help="relative spread of the per-island coercive fields")
     ap.add_argument("--coupling", type=float, default=1.0, help="multiplier on the inter-island (dumbbell) interaction")
+    ap.add_argument("--switching", choices=["axial", "sw"], default="axial",
+                    help="axial: energy-gain criterion (calibrated coercive 0.05 0.0216); sw: Stoner-Wohlfarth on the local field")
     ap.add_argument("--ridge", type=float, default=1.0, help="ridge regularisation (features are O(1))")
     ap.add_argument("--features", choices=["moment", "onehot"], default="moment")
     ap.add_argument("--deterministic", action="store_true")

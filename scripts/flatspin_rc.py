@@ -39,14 +39,17 @@ def ridge_r2(X, y, k_max=8, alpha=1e-2, train_frac=0.6, washout=50):
 
 
 def run(size, disorder, alpha, hc, angle, protocol, h_min, h_max, n, seed, leak, jitter, rot, model="square",
-        angles=None, hard_frac=0.0, hard_ratio=1.0, stack=1):
+        angles=None, hard_frac=0.0, hard_ratio=1.0, stack=1, sw_params=None):
     """angles     : list of drive angles cycled step by step (spatial multiplexing of time)
     hard_frac  : fraction of islands with a coercive field hard_ratio x hc (persistent population)
-    stack      : number of past spin vectors concatenated in the readout (delay line, baseline)"""
+    stack      : number of past spin vectors concatenated in the readout (delay line, baseline)
+    sw_params  : (b, c, beta, gamma) of the flatspin switching astroid; default (0.41, 1, 1.5, 3.9);
+                 (1, 1, 3, 3) is the classic Stoner-Wohlfarth astroid"""
     import flatspin.model as fm
     cls = {"square": fm.SquareSpinIceClosed, "pinwheel": fm.PinwheelSpinIceDiamond,
            "kagome": fm.KagomeSpinIce}[model]
-    m = cls(size=tuple(size), alpha=alpha, disorder=disorder, hc=hc, use_opencl=0, random_seed=seed)
+    kw = dict(zip(("sw_b", "sw_c", "sw_beta", "sw_gamma"), sw_params)) if sw_params else {}
+    m = cls(size=tuple(size), alpha=alpha, disorder=disorder, hc=hc, use_opencl=0, random_seed=seed, **kw)
     rng = np.random.default_rng(seed)
     if hard_frac > 0:
         hard = rng.random(m.spin_count) < hard_frac
@@ -99,6 +102,7 @@ def main(argv=None):
     ap.add_argument("--angles", type=float, nargs="+", default=None, help="cycle these drive angles step by step")
     ap.add_argument("--hard-frac", type=float, default=0.0); ap.add_argument("--hard-ratio", type=float, default=1.0)
     ap.add_argument("--stack", type=int, default=1, help="readout delay line: concatenate the last k spin vectors")
+    ap.add_argument("--sw-params", type=float, nargs=4, default=None, help="astroid (b, c, beta, gamma); default flatspin (0.41 1 1.5 3.9)")
     ap.add_argument("--n", type=int, default=600)
     ap.add_argument("--seeds", type=int, default=2)
     ap.add_argument("--out", required=True)
@@ -109,7 +113,7 @@ def main(argv=None):
     for proto in a.protocol:
         for dis in a.disorder:
             rs = [run(a.size, dis, a.alpha, a.hc, a.angle, proto, *a.window, a.n, s, a.leak, a.jitter, a.rot, a.model,
-                      a.angles, a.hard_frac, a.hard_ratio, a.stack) for s in range(a.seeds)]
+                      a.angles, a.hard_frac, a.hard_ratio, a.stack, a.sw_params) for s in range(a.seeds)]
             r = dict(rs[0]); r["MC"] = float(np.mean([x["MC"] for x in rs]))
             r["R2"] = np.mean([x["R2"] for x in rs], axis=0).round(2).tolist()
             r["distinct_states_2nd_half"] = float(np.mean([x["distinct_states_2nd_half"] for x in rs]))

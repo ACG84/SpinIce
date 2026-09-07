@@ -47,13 +47,19 @@ def load_landscape(catalogue_path):
 
 class ASVILattice:
     def __init__(self, catalogue, coercive, n_cells=(4, 4), lattice_constant=None, width_T=2e-3,
-                 charge_pos=0.87, seed=0, pbc=False, disorder=0.0, coupling=1.0):
+                 charge_pos=0.87, seed=0, pbc=False, disorder=0.0, coupling=1.0, switching="axial"):
         """coercive: per-layer coercive fields (T) along the island axis; the angular dependence follows
         the Stoner-Wohlfarth astroid, B_c(theta) = B_c / (|cos|^(2/3) + |sin|^(2/3))^(3/2) (0.5 B_c at 45 deg).
         lattice_constant overrides the catalogue's length + 2 vertex_gap.  charge_pos: charge position
         along the axis in units of length/2 (0.87 ~ the centre of the rounded end).  coupling: multiplier
         on the inter-island interaction (1 = the dumbbell model of the catalogue geometry; > 1 mimics a
-        denser / thicker lattice for scans of the coupling regime)."""
+        denser / thicker lattice for scans of the coupling regime).
+        switching: 'axial'  - a transition fires when its energy gain (external field along the axis plus the
+                              charge interaction) exceeds B_c[layer] astro(theta_ext) |dM_layer|;
+                   'sw'     - Stoner-Wohlfarth on the LOCAL field (external + the other islands' stray field
+                              at the island centre): fires when the transition is downhill in energy and
+                              |B_loc| > B_c[layer] astro(theta_loc).  The stray field's component
+                              perpendicular to the axis then lowers the threshold, as in flatspin."""
         from .geometry import build_islands
         self.labels, self.E, self.m_axis, self.p = load_landscape(catalogue)
         self.K, self.L = self.m_axis.shape
@@ -101,6 +107,13 @@ class ASVILattice:
         same = (np.arange(self.n)[:, None] == np.arange(self.n)[None, :])
         G[np.repeat(np.repeat(same, self.nq, 0), self.nq, 1)] = 0.0             # no intra-island terms
         self.G = G                                                               # (n*nq, n*nq)
+        # stray-field kernel: field at island centres from every charge point of other islands (n, n*nq, 2)
+        dvec = self.centre[:, None, :] - flat[None, :, :]
+        rr = np.linalg.norm(dvec, axis=-1)
+        Kf = coupling * MU0 / (4 * math.pi) * dvec / np.maximum(rr, 1e-12)[..., None] ** 3
+        Kf[np.repeat(same, self.nq, 1)] = 0.0
+        self.Kf = Kf
+        self.switching = switching
         # per-state charge vector (K, nq): [+q_l, -q_l] per layer
         self.Qs = np.zeros((self.K, self.nq))
         for l in range(self.L):
@@ -121,6 +134,11 @@ class ASVILattice:
         Q = self.Qs[self.s].reshape(-1)                                          # (n*nq,)
         return (self.G @ Q).reshape(self.n, self.nq)
 
+    def stray_field(self):
+        """Stray field (T) of the other islands at each island centre, (n, 2)."""
+        Q = self.Qs[self.s].reshape(-1)
+        return np.einsum('imk,m->ik', self.Kf, Q)
+
     def coupling_field(self):
         """Per-island axial field equivalent (T) of the other islands' charges in the current state: the
         interaction energy change of reversing the whole island divided by its moment change."""
@@ -140,13 +158,15 @@ class ASVILattice:
         lists per island of (s', layer, gain, barrier)."""
         Phi = self.potentials()                                                  # (n, nq)
         B = np.asarray(B_ext[:2], dtype=float)
-        Bax = self.axis @ B                                                      # field along each axis (n,)
-        Bmag = np.linalg.norm(B)
-        if Bmag > 0:
-            c = np.abs(Bax) / Bmag; sn = np.sqrt(np.clip(1 - c ** 2, 0, 1))
-            astro = 1.0 / (c ** (2 / 3) + sn ** (2 / 3)) ** 1.5                  # SW astroid factor per island
+        Bax = self.axis @ B                                                      # external field along each axis (n,)
+        if self.switching == "sw":
+            Bloc = B[None, :] + self.stray_field()                               # (n, 2)
         else:
-            astro = np.ones(self.n)
+            Bloc = np.broadcast_to(B, (self.n, 2))
+        Bax_loc = np.einsum('ik,ik->i', self.axis, Bloc)
+        Bmag = np.linalg.norm(Bloc, axis=1)
+        c = np.abs(Bax_loc) / np.maximum(Bmag, 1e-15); sn = np.sqrt(np.clip(1 - c ** 2, 0, 1))
+        astro = np.where(Bmag > 0, 1.0 / np.maximum(c ** (2 / 3) + sn ** (2 / 3), 1e-9) ** 1.5, 1.0)
         out = []
         for i in range(self.n):
             s = self.s[i]
@@ -155,9 +175,15 @@ class ASVILattice:
                 dE = self.E[j] - self.E[s]
                 dM = self.Mtot[j] - self.Mtot[s]
                 dQ = self.Qs[j] - self.Qs[s]
-                g = -dE + dM * Bax[i] - dQ @ Phi[i]
-                bar = self.Bc[l] * self.bc_scale[i] * astro[i] * abs(self.M_layer[j, l] - self.M_layer[s, l])
-                rows.append((j, l, g, bar))
+                g = -dE + dM * Bax[i] - dQ @ Phi[i]                              # energy gain (J)
+                dMl = abs(self.M_layer[j, l] - self.M_layer[s, l])
+                if self.switching == "sw":
+                    # downhill in energy AND |B_loc| above the astroid; margin in J for the noise comparison
+                    margin = (Bmag[i] - self.Bc[l] * self.bc_scale[i] * astro[i]) * dMl
+                    rows.append((j, l, margin if g > 0 else -np.inf, 0.0))
+                else:
+                    bar = self.Bc[l] * self.bc_scale[i] * astro[i] * dMl
+                    rows.append((j, l, g, bar))
             out.append(rows)
         return out
 
