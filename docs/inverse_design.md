@@ -629,11 +629,35 @@ rank: thicker layers and a smaller vertex gap raise the vertex field
 (x2-3 is realistic before the islands touch), a wider / thinner top layer
 lowers its switching fields (13 nm / 152 nm halved the escape field), and
 a less elongated island lowers the hard-axis field most directly, at the
-price of bistability.  Whether the real reversal of a 550 x 140 nm stadium
-(nucleation at the ends, not coherent rotation) is as sensitive to a
-perpendicular vertex field as the astroid says is exactly what the
-micromagnetic hysteresis at several field angles would tell, and it is the
-cheapest next calculation: a single-island angular sweep on the CPU.
+price of bistability.  Two more checks close the loop:
+
+* **The automaton does reach flatspin's regime, weakly.**  With a zero-field
+  relaxation before every readout (as in `flatspin_rc.py`; `scripts/macro_control.py`,
+  logs in `docs/data/lattice_scans/macro_control_*.log`) the point-dipole
+  control at x9 coupling (13.6 mT parallel / 28.5 mT perpendicular against
+  the 15 mT threshold, i.e. flatspin's alpha 0.005) visits 25-300 states and
+  gives R^2(1) up to 0.13 (window 36-66 mT, leak 30 mT, sequential updates,
+  MC 0.97), 0.07-0.08 in neighbouring windows and 0.05 at x12; below x7 it
+  saturates.  So the mechanism is the same (neighbour fields at or above the
+  intrinsic threshold, a leak that only resets where the neighbours allow)
+  and the smaller magnitude comes from the field geometry of the two codes.
+  Without the zero-field relaxation the same runs have R^2(1) <= 0.06: the
+  free relaxation after the write, where the lattice reorganises under its
+  own fields, is part of the memory.
+* **The real island's astroid is flatter than the ideal one.**
+  `scripts/angular_sweep.py` (magnum.np, 10 nm cells, 2 mT steps,
+  `docs/data/astroid_2layer/`) gives the top layer's switching field at 45,
+  60, 70 and 80 deg from the axis as 38, 40, 52 and 74 mT, i.e. (h_par,
+  h_perp) = (27, 27), (20, 35), (18, 49), (13, 73) mT; the bottom layer
+  switches at 68 mT at 45 deg and not below 80 mT at the other angles.  An
+  ideal astroid through the 45 deg point would switch at 51 mT at 80 deg;
+  the stadium needs 74 mT, so its hard-axis field is well above 100 mT and a
+  perpendicular field lowers the parallel threshold by roughly 0.5 mT per mT
+  near 45 deg and much less beyond.  With 11 mT of perpendicular vertex
+  field at the island ends the neighbours shift the top layer's threshold by
+  about 5 mT out of 27, consistent with the automaton's estimate (ratio
+  ~0.3) and a factor 3 short of the regime where the lattice, rather than
+  the drive, decides what switches.
 
 ### Differential-evolution design of the flatspin lattice (8 parameters)
 

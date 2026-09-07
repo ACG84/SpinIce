@@ -1,6 +1,31 @@
 {
  "description": "2-layer generalised astroid (stadium fit), sw_ends",
  "runs": {
+  "c1_parallel_28e-3_44e-3_38e-3_4e-3": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     -0.15,
+     -5.0,
+     -2.21,
+     -0.64,
+     -0.58,
+     -1.62,
+     -0.88,
+     -3.08,
+     -3.02
+    ],
+    "MC": 0.314039081195971,
+    "flips": 29.234166666666667,
+    "distinct": 565.5,
+    "vortex_frac": 0.0058333333333333345,
+    "seconds": 136.39807188510895
+   }
+  ],
   "c1_parallel_28e-3_44e-3_38e-3_4e-3--deterministic": [
    {
     "a_nm": 800.0,
@@ -24,6 +49,81 @@
     "distinct": 242.5,
     "vortex_frac": 0.0,
     "seconds": 188.4706416130066
+   }
+  ],
+  "c1_parallel_30e-3_42e-3_34e-3_3e-3": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.45,
+     0.03,
+     -0.04,
+     -0.02,
+     -0.06,
+     -0.05,
+     -0.02,
+     -0.03,
+     -0.02
+    ],
+    "MC": 0.4860355561649605,
+    "flips": 9.569166666666668,
+    "distinct": 66.0,
+    "vortex_frac": 0.00012152777777777779,
+    "seconds": 71.59671020507812
+   }
+  ],
+  "c1_parallel_30e-3_42e-3_34e-3_3e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.3,
+     0.03,
+     -0.0,
+     -0.0,
+     -0.01,
+     -0.0,
+     -0.01,
+     -0.01,
+     -0.0
+    ],
+    "MC": 0.32716672249000955,
+    "flips": 8.392916666666666,
+    "distinct": 11.5,
+    "vortex_frac": 0.0,
+    "seconds": 79.91151547431946
+   }
+  ],
+  "c1_parallel_30e-3_42e-3_36e-3_3e-3": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.06,
+     -0.28,
+     -0.58,
+     -0.06,
+     -0.14,
+     -0.1,
+     -0.77,
+     -0.36,
+     -0.5
+    ],
+    "MC": 0.30602795555373996,
+    "flips": 20.933333333333334,
+    "distinct": 272.0,
+    "vortex_frac": 0.006776620370370372,
+    "seconds": 124.86364102363586
    }
   ],
   "c1_parallel_30e-3_42e-3_36e-3_3e-3--deterministic": [
@@ -51,6 +151,81 @@
     "seconds": 128.35272300243378
    }
   ],
+  "c1_parallel_30e-3_52e-3_44e-3_5e-3": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.78,
+     -0.13,
+     -0.11,
+     -0.17,
+     -0.11,
+     -0.14,
+     -0.14,
+     -0.17,
+     -0.13
+    ],
+    "MC": 0.776872082145077,
+    "flips": 82.16541666666666,
+    "distinct": 421.5,
+    "vortex_frac": 0.004982638888888889,
+    "seconds": 140.20614671707153
+   }
+  ],
+  "c1_parallel_30e-3_52e-3_44e-3_5e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.79,
+     -0.07,
+     -0.09,
+     -0.12,
+     -0.09,
+     -0.12,
+     -0.07,
+     -0.1,
+     -0.09
+    ],
+    "MC": 0.7861033228434597,
+    "flips": 76.65791666666667,
+    "distinct": 352.0,
+    "vortex_frac": 0.0,
+    "seconds": 195.83056592941284
+   }
+  ],
+  "c1_parallel_32e-3_44e-3_30e-3_2e-3": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.02,
+     -0.01,
+     -0.0,
+     0.0,
+     -0.01,
+     -0.0,
+     -0.0,
+     0.0,
+     -0.0
+    ],
+    "MC": 0.019390859464813448,
+    "flips": 0.50625,
+    "distinct": 3.0,
+    "vortex_frac": 0.0,
+    "seconds": 27.784034609794617
+   }
+  ],
   "c1_parallel_32e-3_44e-3_30e-3_2e-3--deterministic": [
    {
     "a_nm": 800.0,
@@ -74,6 +249,156 @@
     "distinct": 1.0,
     "vortex_frac": 0.0,
     "seconds": 28.166260719299316
+   }
+  ],
+  "c1_sequential_28e-3_44e-3_38e-3_4e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.79,
+     -0.01,
+     -0.01,
+     -0.02,
+     -0.06,
+     -0.03,
+     -0.03,
+     -0.04,
+     -0.01
+    ],
+    "MC": 0.7963973930391057,
+    "flips": 36.557500000000005,
+    "distinct": 76.0,
+    "vortex_frac": 0.0,
+    "seconds": 384.96741783618927
+   }
+  ],
+  "c1_sequential_30e-3_42e-3_34e-3_3e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.27,
+     0.03,
+     -0.01,
+     -0.0,
+     -0.0,
+     -0.0,
+     -0.0,
+     -0.01,
+     -0.0
+    ],
+    "MC": 0.29917891014391673,
+    "flips": 6.379166666666666,
+    "distinct": 7.5,
+    "vortex_frac": 0.0,
+    "seconds": 78.40123081207275
+   }
+  ],
+  "c1_sequential_30e-3_42e-3_36e-3_3e-3": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.59,
+     -0.04,
+     -0.11,
+     -0.02,
+     -0.04,
+     -0.06,
+     -0.06,
+     -0.06,
+     -0.05
+    ],
+    "MC": 0.5870827180864933,
+    "flips": 18.16916666666667,
+    "distinct": 164.0,
+    "vortex_frac": 1.1574074074074073e-05,
+    "seconds": 231.7320318222046
+   }
+  ],
+  "c1_sequential_30e-3_42e-3_36e-3_3e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.59,
+     0.02,
+     -0.01,
+     0.01,
+     -0.01,
+     0.0,
+     -0.01,
+     -0.01,
+     -0.01
+    ],
+    "MC": 0.6224622995719569,
+    "flips": 21.893749999999997,
+    "distinct": 12.0,
+    "vortex_frac": 0.0,
+    "seconds": 234.56801402568817
+   }
+  ],
+  "c1_sequential_30e-3_52e-3_44e-3_5e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.82,
+     -0.0,
+     -0.04,
+     -0.05,
+     -0.05,
+     -0.06,
+     -0.06,
+     -0.08,
+     -0.05
+    ],
+    "MC": 0.8318114629995772,
+    "flips": 67.34041666666667,
+    "distinct": 248.5,
+    "vortex_frac": 0.0,
+    "seconds": 688.2256121635437
+   }
+  ],
+  "c1_sequential_32e-3_44e-3_30e-3_2e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     -0.0,
+     0.0,
+     0.0,
+     0.0,
+     -0.0,
+     -0.0,
+     -0.0,
+     0.0,
+     0.0
+    ],
+    "MC": 0.0,
+    "flips": 0.06,
+    "distinct": 1.0,
+    "vortex_frac": 0.0,
+    "seconds": 15.70790982246399
    }
   ],
   "c2_parallel_28e-3_44e-3_38e-3_4e-3--deterministic": [
@@ -149,6 +474,31 @@
     "distinct": 34.5,
     "vortex_frac": 0.0,
     "seconds": 94.75870108604431
+   }
+  ],
+  "c2_parallel_30e-3_52e-3_44e-3_5e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 2.0,
+    "coupling_field_mT": 0.7630205768516759,
+    "states_per_island": 16,
+    "R2": [
+     0.85,
+     -0.06,
+     -0.1,
+     -0.07,
+     -0.09,
+     -0.09,
+     -0.07,
+     -0.1,
+     -0.12
+    ],
+    "MC": 0.8545247956575953,
+    "flips": 77.05916666666667,
+    "distinct": 367.5,
+    "vortex_frac": 0.0,
+    "seconds": 272.0074830055237
    }
   ],
   "c2_parallel_32e-3_44e-3_30e-3_2e-3--deterministic": [
