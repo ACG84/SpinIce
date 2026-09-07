@@ -1,0 +1,180 @@
+{
+ "description": "2-layer generalised astroid (stadium fit), sw_ends",
+ "runs": {
+  "c1_parallel_28e-3_44e-3_38e-3_4e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.82,
+     -0.03,
+     -0.05,
+     -0.04,
+     -0.02,
+     -0.06,
+     -0.06,
+     -0.04,
+     -0.04
+    ],
+    "MC": 0.8368704174754977,
+    "flips": 31.4675,
+    "distinct": 242.5,
+    "vortex_frac": 0.0,
+    "seconds": 188.4706416130066
+   }
+  ],
+  "c1_parallel_30e-3_42e-3_36e-3_3e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     0.6,
+     0.01,
+     -0.02,
+     -0.05,
+     -0.01,
+     -0.01,
+     -0.02,
+     -0.02,
+     -0.05
+    ],
+    "MC": 0.6118575093102532,
+    "flips": 26.708333333333336,
+    "distinct": 30.5,
+    "vortex_frac": 0.0,
+    "seconds": 128.35272300243378
+   }
+  ],
+  "c1_parallel_32e-3_44e-3_30e-3_2e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 1.0,
+    "coupling_field_mT": 0.38151028842583795,
+    "states_per_island": 16,
+    "R2": [
+     -0.0,
+     0.0,
+     0.0,
+     0.0,
+     -0.0,
+     -0.0,
+     -0.0,
+     0.0,
+     0.0
+    ],
+    "MC": 0.0,
+    "flips": 0.06,
+    "distinct": 1.0,
+    "vortex_frac": 0.0,
+    "seconds": 28.166260719299316
+   }
+  ],
+  "c2_parallel_28e-3_44e-3_38e-3_4e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 2.0,
+    "coupling_field_mT": 0.7630205768516759,
+    "states_per_island": 16,
+    "R2": [
+     0.86,
+     -0.02,
+     -0.09,
+     -0.06,
+     -0.09,
+     -0.06,
+     -0.1,
+     -0.12,
+     -0.12
+    ],
+    "MC": 0.859370372569003,
+    "flips": 14.445833333333333,
+    "distinct": 142.5,
+    "vortex_frac": 0.0,
+    "seconds": 120.32669377326965
+   }
+  ],
+  "c2_parallel_30e-3_42e-3_34e-3_3e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 2.0,
+    "coupling_field_mT": 0.7630205768516759,
+    "states_per_island": 16,
+    "R2": [
+     0.79,
+     -0.02,
+     -0.04,
+     -0.07,
+     -0.08,
+     -0.06,
+     -0.06,
+     -0.07,
+     -0.07
+    ],
+    "MC": 0.7882708351298353,
+    "flips": 8.303333333333335,
+    "distinct": 39.0,
+    "vortex_frac": 0.0,
+    "seconds": 97.56019735336304
+   }
+  ],
+  "c2_parallel_30e-3_42e-3_36e-3_3e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 2.0,
+    "coupling_field_mT": 0.7630205768516759,
+    "states_per_island": 16,
+    "R2": [
+     0.6,
+     -0.36,
+     -3.07,
+     -0.2,
+     -1.25,
+     -3.49,
+     -0.36,
+     -0.67,
+     -0.03
+    ],
+    "MC": 0.6037414972103152,
+    "flips": 10.871666666666666,
+    "distinct": 34.5,
+    "vortex_frac": 0.0,
+    "seconds": 94.75870108604431
+   }
+  ],
+  "c2_parallel_32e-3_44e-3_30e-3_2e-3--deterministic": [
+   {
+    "a_nm": 800.0,
+    "islands": 72,
+    "coupling": 2.0,
+    "coupling_field_mT": 0.7630205768516759,
+    "states_per_island": 16,
+    "R2": [
+     -0.0,
+     0.0,
+     0.0,
+     0.0,
+     -0.0,
+     -0.0,
+     -0.0,
+     0.0,
+     0.0
+    ],
+    "MC": 0.0,
+    "flips": 0.3254166666666667,
+    "distinct": 1.0,
+    "vortex_frac": 0.0,
+    "seconds": 29.450166702270508
+   }
+  ]
+ }
+}

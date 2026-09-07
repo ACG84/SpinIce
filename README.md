@@ -216,6 +216,32 @@ sensitivity whenever an island edge sits exactly on a cell boundary).
 `tests/test_magnumnp.py` checks the soft/hard agreement and the gradient
 against finite differences on a coarse island.
 
+### Lattice-scale proxies: flatspin and the ASVI lattice automaton
+
+Full micromagnetics of a lattice is too slow for reservoir statistics, so
+memory curves are measured on two macrospin-level models with the same
+field-loop protocols (`scripts/flatspin_rc.py`, `scripts/lattice_rc.py`):
+
+```bash
+pip install flatspin
+# flatspin square ice, leak protocol, window in units of hc
+python scripts/flatspin_rc.py --size 8 8 --alpha 0.005 --protocol leak --window 1.5 2.5 --leak 1.0 --jitter 0.15 --out runs/fs
+# ASVI lattice automaton: catalogue states per island, dumbbell coupling, Stoner-Wohlfarth switching on the
+# local field at the island ends, calibrated to the mumax+ transition table (B_c 90 / 72 mT -> 48 / 36 mT at 45 deg)
+python scripts/lattice_rc.py --catalogue docs/data/np_single_10/catalogue.json --coercive 0.09 0.072 \
+    --switching sw_ends --cells 6 6 --angle 45 --window 30e-3 42e-3 --leak 36e-3 --jitter 3e-3 --out runs/lat
+```
+
+`lattice_rc.py` options: `--switching axial|sw|sw_ends` (energy-gain rule,
+Stoner-Wohlfarth on the local field at the centre or at the ends),
+`--astroid b c beta gamma` (flatspin's generalised astroid), `--update
+parallel|sequential`, `--coupling k` (multiplier on the interaction),
+`--deterministic`.  `scripts/collect_lattice_scans.py` gathers the run
+JSONs into `docs/data/lattice_scans/`.  Results and the analysis of why the
+800 nm ASVI lattice shows no fading memory (the vertex field is 0.3 of the
+switching field; flatspin's memory needs a ratio above 1) are in
+`docs/inverse_design.md`.
+
 ## References
 
 * T. Dion, K. D. Stenning, A. Vanstone *et al.*, "Ultrastrong magnon-magnon coupling and chiral

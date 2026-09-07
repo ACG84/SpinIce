@@ -1,0 +1,375 @@
+{
+ "description": "flatspin 8x8 with the ideal SW astroid",
+ "runs": {
+  "a0.003_w0.5-1.5": [
+   {
+    "size": [
+     8,
+     8
+    ],
+    "disorder": 0.05,
+    "alpha": 0.003,
+    "protocol": "leak",
+    "angle": 45.0,
+    "angles": [
+     45.0
+    ],
+    "hard_frac": 0.0,
+    "hard_ratio": 1.0,
+    "stack": 1,
+    "window": [
+     0.5,
+     1.5
+    ],
+    "spins": 144,
+    "R2": [
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01
+    ],
+    "MC": 0.0,
+    "distinct_states_2nd_half": 1.0,
+    "mean_flips": 0.0
+   }
+  ],
+  "a0.003_w0.7-1.3": [
+   {
+    "size": [
+     8,
+     8
+    ],
+    "disorder": 0.05,
+    "alpha": 0.003,
+    "protocol": "leak",
+    "angle": 45.0,
+    "angles": [
+     45.0
+    ],
+    "hard_frac": 0.0,
+    "hard_ratio": 1.0,
+    "stack": 1,
+    "window": [
+     0.7,
+     1.3
+    ],
+    "spins": 144,
+    "R2": [
+     0.44,
+     -0.09,
+     0.01,
+     -0.1,
+     -0.24,
+     -0.12,
+     -0.16,
+     -0.14,
+     -0.09
+    ],
+    "MC": 0.4607894821485293,
+    "distinct_states_2nd_half": 53.5,
+    "mean_flips": 10.513333333333334
+   }
+  ],
+  "a0.005_w0.5-1.5": [
+   {
+    "size": [
+     8,
+     8
+    ],
+    "disorder": 0.05,
+    "alpha": 0.005,
+    "protocol": "leak",
+    "angle": 45.0,
+    "angles": [
+     45.0
+    ],
+    "hard_frac": 0.0,
+    "hard_ratio": 1.0,
+    "stack": 1,
+    "window": [
+     0.5,
+     1.5
+    ],
+    "spins": 144,
+    "R2": [
+     0.49,
+     -0.02,
+     -0.02,
+     -0.03,
+     -0.04,
+     -0.01,
+     -0.01,
+     -0.04,
+     -0.02
+    ],
+    "MC": 0.4942739489262005,
+    "distinct_states_2nd_half": 7.5,
+    "mean_flips": 2.5316666666666667
+   }
+  ],
+  "a0.005_w0.6-1.0": [
+   {
+    "size": [
+     8,
+     8
+    ],
+    "disorder": 0.05,
+    "alpha": 0.005,
+    "protocol": "leak",
+    "angle": 45.0,
+    "angles": [
+     45.0
+    ],
+    "hard_frac": 0.0,
+    "hard_ratio": 1.0,
+    "stack": 1,
+    "window": [
+     0.6,
+     1.0
+    ],
+    "spins": 144,
+    "R2": [
+     0.16,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.02,
+     -0.02,
+     -0.01,
+     -0.01,
+     -0.01
+    ],
+    "MC": 0.16413872969356608,
+    "distinct_states_2nd_half": 1.5,
+    "mean_flips": 0.20666666666666667
+   }
+  ],
+  "a0.005_w0.7-1.3": [
+   {
+    "size": [
+     8,
+     8
+    ],
+    "disorder": 0.05,
+    "alpha": 0.005,
+    "protocol": "leak",
+    "angle": 45.0,
+    "angles": [
+     45.0
+    ],
+    "hard_frac": 0.0,
+    "hard_ratio": 1.0,
+    "stack": 1,
+    "window": [
+     0.7,
+     1.3
+    ],
+    "spins": 144,
+    "R2": [
+     0.13,
+     -0.01,
+     -0.01,
+     -0.02,
+     -0.01,
+     -0.02,
+     -0.01,
+     -0.01,
+     -0.01
+    ],
+    "MC": 0.13484061306296963,
+    "distinct_states_2nd_half": 2.0,
+    "mean_flips": 0.10666666666666667
+   }
+  ],
+  "a0.005_w1.5-2.5": [
+   {
+    "size": [
+     8,
+     8
+    ],
+    "disorder": 0.05,
+    "alpha": 0.005,
+    "protocol": "leak",
+    "angle": 45.0,
+    "angles": [
+     45.0
+    ],
+    "hard_frac": 0.0,
+    "hard_ratio": 1.0,
+    "stack": 1,
+    "window": [
+     1.5,
+     2.5
+    ],
+    "spins": 144,
+    "R2": [
+     0.77,
+     0.26,
+     0.08,
+     -0.03,
+     -0.06,
+     -0.06,
+     -0.04,
+     -0.04,
+     -0.08
+    ],
+    "MC": 1.1051594657385562,
+    "distinct_states_2nd_half": 20.0,
+    "mean_flips": 58.47833333333333
+   }
+  ],
+  "a0.007_w0.5-1.5": [
+   {
+    "size": [
+     8,
+     8
+    ],
+    "disorder": 0.05,
+    "alpha": 0.007,
+    "protocol": "leak",
+    "angle": 45.0,
+    "angles": [
+     45.0
+    ],
+    "hard_frac": 0.0,
+    "hard_ratio": 1.0,
+    "stack": 1,
+    "window": [
+     0.5,
+     1.5
+    ],
+    "spins": 144,
+    "R2": [
+     0.32,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.02,
+     -0.02,
+     -0.01,
+     -0.01,
+     -0.01
+    ],
+    "MC": 0.325386907132875,
+    "distinct_states_2nd_half": 1.5,
+    "mean_flips": 3.5733333333333333
+   }
+  ],
+  "a0.007_w0.7-1.3": [
+   {
+    "size": [
+     8,
+     8
+    ],
+    "disorder": 0.05,
+    "alpha": 0.007,
+    "protocol": "leak",
+    "angle": 45.0,
+    "angles": [
+     45.0
+    ],
+    "hard_frac": 0.0,
+    "hard_ratio": 1.0,
+    "stack": 1,
+    "window": [
+     0.7,
+     1.3
+    ],
+    "spins": 144,
+    "R2": [
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01
+    ],
+    "MC": 0.0,
+    "distinct_states_2nd_half": 1.0,
+    "mean_flips": 6.02
+   }
+  ],
+  "a0.01_w0.5-1.5": [
+   {
+    "size": [
+     8,
+     8
+    ],
+    "disorder": 0.05,
+    "alpha": 0.01,
+    "protocol": "leak",
+    "angle": 45.0,
+    "angles": [
+     45.0
+    ],
+    "hard_frac": 0.0,
+    "hard_ratio": 1.0,
+    "stack": 1,
+    "window": [
+     0.5,
+     1.5
+    ],
+    "spins": 144,
+    "R2": [
+     0.31,
+     -0.0,
+     -0.0,
+     -0.01,
+     -0.02,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.02
+    ],
+    "MC": 0.3091962940234613,
+    "distinct_states_2nd_half": 1.5,
+    "mean_flips": 4.118333333333333
+   }
+  ],
+  "a0.01_w0.7-1.3": [
+   {
+    "size": [
+     8,
+     8
+    ],
+    "disorder": 0.05,
+    "alpha": 0.01,
+    "protocol": "leak",
+    "angle": 45.0,
+    "angles": [
+     45.0
+    ],
+    "hard_frac": 0.0,
+    "hard_ratio": 1.0,
+    "stack": 1,
+    "window": [
+     0.7,
+     1.3
+    ],
+    "spins": 144,
+    "R2": [
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01,
+     -0.01
+    ],
+    "MC": 0.0,
+    "distinct_states_2nd_half": 1.0,
+    "mean_flips": 2.0116666666666667
+   }
+  ]
+ }
+}

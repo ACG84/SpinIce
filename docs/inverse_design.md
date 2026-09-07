@@ -515,6 +515,116 @@ next scans use leaks that straddle the switching curve (partial reset) and
 symmetry-breaking drive angles at low fields, where one amplitude addresses
 the two sublattices at different points of their curves.
 
+### Follow-up scans (symmetry-breaking angles, partial resets, low fields)
+
+All on the 6 x 6 lattice, 1200 steps, 2 seeds, 5 % disorder, ridge 1
+(`docs/data/lattice_scans/lat2d, lat3d, lat2e, lat3e`).  Every configuration
+gives R^2(1) <= 0.02:
+
+| scan | configurations | best R^2(0) | R^2(1) |
+|---|---|---|---|
+| 2-layer, drive at 15 / 25 / 35 deg, windows 20-45 mT, leaks 30-42 mT | 15 | 0.93 (15 deg, 22-30 / 30 +- 3) | -0.05 ... 0.04 |
+| 3-layer, 15 / 25 / 35 deg, windows 10-45 mT | 12 | 0.63 | <= 0 |
+| 2-layer, 45 deg, leaks straddling the top curve (29-33 +- 2-4 mT) | 6 | 0.95 | <= 0 |
+| 3-layer, 45 deg, 6-16 mT windows on the 20 nm layer, 25 nm layer as a persistent bit | 7 | 0.72 | <= 0 |
+
+At 15 deg the Stoner-Wohlfarth factor makes one sublattice switch at ~14 mT
+(top) and ~32 mT (bottom) while the other needs > 50 mT, so a low window
+addresses one sublattice only; that changes the encoding, not the memory.
+
+### Why there is no memory: the switching model, the coupling regime, and flatspin
+
+The null results above are systematic, so the automaton was taken apart
+(`docs/data/lattice_scans/lat2f, lat2g, lat2h, lat2s, lat2e2, lat2sub, lat2gsw`,
+all 6 x 6, 45 deg, 2 seeds):
+
+1. **Noise is not the reason.**  Deterministic switching (quenched disorder
+   only) gives R^2(0) = 0.89-0.98 and R^2(1) < 0 in every window; a 0.5 mT
+   noise width changes nothing.
+2. **An uncoupled threshold latch has no lag-1 memory** for any window /
+   leak / jitter combination (a 72-island model with fixed thresholds, the
+   same protocol, tested directly): the leak either erases an island every
+   step or never, and a linear readout cannot separate the rare steps on
+   which an island carries u_{t-1}.  Memory must come from the coupling.
+3. **The coupling is weak.**  On the polarised 800 nm lattice the other
+   islands' charges are worth 2.2 mT of axial field at an island centre
+   (7 % of the 28-33 mT top-layer threshold); the ground state (antiparallel
+   bilayers, ~1/3 of the moment) sees 0.4 mT.  Multiplying the interaction by
+   2, 4 and 8 (`--coupling`) does not create memory either: the lattice goes
+   from encoder (x2, x4: R^2(0) 0.6-0.8, R^2(1) < 0) to frozen (x8: 6-11
+   flips per step).
+4. **The energy-gain switching rule was wrong for the bilayer.**  The
+   catalogue puts the parallel state 27.6 aJ above the antiparallel one,
+   which the rule turns into an 11 mT bias: the top layer sets at 31 mT and
+   resets at ~0 mT, so any leak (even 0 +- 2 mT, `lat2h`) erases it.  The
+   mumax+ unit-cell transition table at 45 deg shows a nearly symmetric loop
+   instead: the fully parallel state survives -32 mT and breaks at -40 mT,
+   tops set at 32-40 mT, bottoms at 40-48 mT.  The automaton therefore has a
+   Stoner-Wohlfarth mode (`--switching sw`): a transition fires when it is
+   downhill in energy and the local field (external + stray field of the
+   other islands) exceeds B_c astro(theta_loc); B_c = 90 / 72 mT reproduces
+   the table (set / reset 36 mT top, 48 mT bottom).  Evaluated at the island
+   ends (`sw_ends`, the nucleation sites next to the neighbours' vertex
+   charges) the stray field is 4 mT parallel and 11 mT perpendicular (max
+   16 mT) on the polarised lattice, five times the centre value.  Neither
+   mode gives memory: leaks straddling the 36 mT threshold (x1, x2 coupling,
+   deterministic or sampled) give R^2(0) up to 0.86 and R^2(1) <= 0.01;
+   leaks below the threshold (24-32 mT) freeze the lattice (1-8 states).
+5. **Sequential (flatspin-like) cascades and the generalised astroid** change
+   nothing.  With `--update sequential` (flip the island with the largest
+   margin, recompute) and with flatspin's micromagnetic astroid fit for a
+   550 x 120 x 10 nm stadium (b 0.245, beta 2.49, gamma 2.67, hc scaled to
+   the same 36 / 48 mT thresholds) the best configurations are R^2(0) 0.84-
+   0.86, R^2(1) <= 0.01.  A control that reduces every island to one rigid
+   macrospin (two states, same lattice and coupling) behaves the same
+   way, so the bilayer landscape is not what suppresses the memory.
+6. **flatspin's memory is a strong-coupling effect and not an astroid
+   effect.**  flatspin with the ideal Stoner-Wohlfarth astroid (b = 1) keeps
+   its memory (window 1.5-2.5 hc: R^2 0.77 / 0.26 / 0.08, MC 1.11, versus
+   0.80 / 0.25 / 0.08 with the default astroid), and the "narrow band" in
+   alpha was a window artefact: with the window retuned, alpha 0.003 gives
+   MC 0.58 (window 1.0-1.8 hc), 0.005 gives 1.13 (1.5-2.5) and 0.007 gives
+   1.27 (2.0-3.5 hc, R^2 0.80 / 0.37 / 0.11).  The numbers behind this: with
+   hc = 30 mT the 45 deg switching field of a flatspin island is only 15 mT
+   (ideal astroid) or 12 mT (default), the drive is 45-75 mT and the dipolar
+   fields are 9 mT parallel / 25 mT perpendicular on the polarised lattice and
+   up to 115 mT in disordered states.  The neighbours, not the intrinsic
+   coercivity, decide what switches; the leak (30 mT, twice the threshold)
+   only resets islands whose neighbours let it.  The ASVI lattice is in the
+   opposite regime: 4 / 11 mT of vertex field against a 36 mT threshold.
+
+| system (45 deg drive) | neighbour field on the polarised lattice | switching field | ratio | R^2(1) |
+|---|---|---|---|---|
+| ASVI automaton, a = 800 nm, island centre | 1.8 par / 1.6 perp mT | 36 mT | 0.05 | 0 |
+| ASVI automaton, island ends | 4 par / 11 perp mT | 36 mT | 0.3 | 0 |
+| ASVI automaton, ends, coupling x4 | 17 par / 43 perp mT | 36 mT | 1.2 | 0 (saturates or freezes) |
+| flatspin alpha 0.003 | 5 par / 15 perp mT | 15 mT | 1 | 0.08 (window retuned) |
+| flatspin alpha 0.005 | 9 par / 25 perp mT | 15 mT | 1.7 | 0.25 |
+| flatspin alpha 0.007 | 12 par / 35 perp mT | 15 mT | 2.3 | 0.37 (window retuned) |
+
+The automaton does not reproduce flatspin's behaviour even at x4-x8
+coupling (it saturates or freezes instead of forming the disordered,
+neighbour-stabilised states flatspin visits), so the last row of the ASVI
+side is a limitation of the charge automaton as much as of the geometry;
+the design conclusion that survives all of this is the ratio in the fourth
+column: fading memory in a field-driven spin ice needs vertex fields at
+least comparable to the switching field, and the Dion et al. geometry
+(550 nm islands on an 800 nm pitch) sits a factor 3-5 below that.  The
+handles are the ones the inverse-design gradients rank: thicker layers and
+a smaller vertex gap raise the vertex field, a wider / thinner top layer
+lowers its switching field (13 nm / 152 nm halved it in the escape-field
+run), and both move the ratio in the same direction.
+
+### Differential-evolution design of the flatspin lattice (8 parameters)
+
+`scripts/flatspin_design.py --objective long` (8 x 8, 300 steps, 1 seed,
+`docs/data/fs_design_long8_history.json`) was stopped after 7 evaluations
+(each cost about an hour under CPU contention).  Best found: window 1.37-
+2.32 hc, leak 1.32 +- 0.10 hc, disorder 6 %, alpha 0.0049, astroid b 0.59 /
+beta 1.96: R^2 0.83 / 0.31 / 0.19 / 0.02, MC ~1.35 against 1.13 for the
+hand-tuned baseline.  A small gain, consistent with the coupling-regime
+picture (the optimiser raised the leak and the drive, not the coupling).
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
