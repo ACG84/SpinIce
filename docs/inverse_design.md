@@ -479,6 +479,42 @@ that is what the differential-evolution search tests next.
   after two generations (48 evaluations): R^2 = 0.82 / 0.29 / 0.09 at lags
   0-2 remains the best.
 
+## ASVI lattice automaton (`asvi_rc/lattice_automaton.py`, `scripts/lattice_rc.py`)
+
+"flatspin with ASVI islands": every island carries the state landscape of its
+single-island micromagnetic catalogue (energies, per-layer moments, vortex
+states), islands interact through a magnetic-charge (dumbbell) model with the
+charges at the stadium ends (2-5 mT of equivalent axis field between
+neighbours on the 800 nm lattice, where a point-dipole estimate gives 0.2 mT),
+switching uses the per-layer coercive fields with the Stoner-Wohlfarth angular
+factor and per-island disorder, and cascades run until no island can switch.
+A 400-step run on 72 islands takes seconds.  Calibration: at 45 deg the top
+layers switch between 28 and 33 mT applied and the bottom layers between 45
+and 55 mT, where the mumax+ transition table put them.  Two bugs were found
+and fixed on the way: a readout starved of samples (features > samples gave
+negative test R^2) and switching noise re-drawn every cascade round, which let
+sub-threshold transitions fire eventually and randomised the lattice (the
+noise is now drawn once per island per field stage).
+
+### 45 deg drive, 6 x 6 cells (72 islands), 5-10 % disorder, 1200 steps
+
+| lattice | window (mT) | leak (mT) | R^2(0) | R^2(1) | flips / step | distinct states |
+|---|---|---|---|---|---|---|
+| 2-layer | 27-34 | 36 +- 3 | 0.57 | 0 | 54 | 568 |
+| 2-layer, 10 % disorder | 25-36 | 36 +- 3 | 0.87 | 0 | 52 | 590 |
+| 2-layer | 30-55 (tops and bottoms) | 50 +- 5 | 0.87 | 0 | 96 | 433 |
+| 2-layer | 30-55 | 45 +- 8 (partial bottom reset) | 0.61 | 0 | 88 | 483 |
+| 3-layer | 15-60 | 50 +- 6 | 0.71 | 0 | 81 | 558 |
+| 3-layer | 15-60, 10 % disorder | 42 +- 5 | 0.73 | 0 | 77 | 382 |
+
+The corrected automaton encodes the current input well (R^2(0) up to 0.9) but
+shows no memory in any 45 deg configuration, including those that leave the
+bottom or middle layers as partially reset slow variables: the leak
+excursions used here reset the addressed layers completely every step.  The
+next scans use leaks that straddle the switching curve (partial reset) and
+symmetry-breaking drive angles at low fields, where one amplitude addresses
+the two sublattices at different points of their curves.
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
