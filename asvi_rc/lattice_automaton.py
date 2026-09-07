@@ -47,11 +47,13 @@ def load_landscape(catalogue_path):
 
 class ASVILattice:
     def __init__(self, catalogue, coercive, n_cells=(4, 4), lattice_constant=None, width_T=2e-3,
-                 charge_pos=0.87, seed=0, pbc=False, disorder=0.0):
+                 charge_pos=0.87, seed=0, pbc=False, disorder=0.0, coupling=1.0):
         """coercive: per-layer coercive fields (T) along the island axis; the angular dependence follows
         the Stoner-Wohlfarth astroid, B_c(theta) = B_c / (|cos|^(2/3) + |sin|^(2/3))^(3/2) (0.5 B_c at 45 deg).
         lattice_constant overrides the catalogue's length + 2 vertex_gap.  charge_pos: charge position
-        along the axis in units of length/2 (0.87 ~ the centre of the rounded end)."""
+        along the axis in units of length/2 (0.87 ~ the centre of the rounded end).  coupling: multiplier
+        on the inter-island interaction (1 = the dumbbell model of the catalogue geometry; > 1 mimics a
+        denser / thicker lattice for scans of the coupling regime)."""
         from .geometry import build_islands
         self.labels, self.E, self.m_axis, self.p = load_landscape(catalogue)
         self.K, self.L = self.m_axis.shape
@@ -95,7 +97,7 @@ class ASVILattice:
         flat = P.reshape(-1, 2)
         diff = flat[:, None, :] - flat[None, :, :]
         r = np.linalg.norm(diff, axis=-1)
-        G = np.where(r > 0, MU0 / (4 * math.pi) / np.maximum(r, 1e-12), 0.0)
+        G = np.where(r > 0, coupling * MU0 / (4 * math.pi) / np.maximum(r, 1e-12), 0.0)
         same = (np.arange(self.n)[:, None] == np.arange(self.n)[None, :])
         G[np.repeat(np.repeat(same, self.nq, 0), self.nq, 1)] = 0.0             # no intra-island terms
         self.G = G                                                               # (n*nq, n*nq)
@@ -118,6 +120,19 @@ class ASVILattice:
         """Potential of all other islands' charges at each island's charge points: (n, nq)."""
         Q = self.Qs[self.s].reshape(-1)                                          # (n*nq,)
         return (self.G @ Q).reshape(self.n, self.nq)
+
+    def coupling_field(self):
+        """Per-island axial field equivalent (T) of the other islands' charges in the current state: the
+        interaction energy change of reversing the whole island divided by its moment change."""
+        Phi = self.potentials()
+        out = np.zeros(self.n)
+        for i in range(self.n):
+            s = self.s[i]
+            # partner state: all macrospin layers reversed (closest label with m_axis -> -m_axis)
+            j = int(np.argmin(np.abs(self.m_axis + self.m_axis[s]).sum(1)))
+            dM = self.Mtot[j] - self.Mtot[s]
+            out[i] = -((self.Qs[j] - self.Qs[s]) @ Phi[i]) / dM if abs(dM) > 0 else 0.0
+        return out
 
     # ------------------------------------------------------------------ dynamics
     def gains(self, B_ext):
