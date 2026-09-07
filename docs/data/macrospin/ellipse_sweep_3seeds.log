@@ -1,0 +1,7 @@
+### ellipse sweep, n=2000, 3 seeds (held-out ridge; MC over lags 1..40, R2(0) separate)
+aspect 1.20: Bk 29 mT tau 3.98 ns samp 1.40 ns | MC 7.17 (7.4 7.1 7.1) horizon 7.0 NL 0.72
+aspect 1.50: Bk 67 mT tau 1.70 ns samp 0.60 ns | MC 9.03 (9.8 9.0 8.3) horizon 9.0 NL 0.75
+aspect 2.00: Bk 119 mT tau 0.95 ns samp 0.33 ns | MC 7.71 (7.1 8.7 7.3) horizon 7.7 NL 0.51
+aspect 2.75: Bk 174 mT tau 0.65 ns samp 0.23 ns | MC 6.04 (5.7 6.9 5.5) horizon 5.3 NL 0.34
+aspect 4.00: Bk 221 mT tau 0.51 ns samp 0.18 ns | MC 4.97 (4.8 5.5 4.6) horizon 3.7 NL 0.25
+### done

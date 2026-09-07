@@ -669,6 +669,71 @@ beta 1.96: R^2 0.83 / 0.31 / 0.19 / 0.02, MC ~1.35 against 1.13 for the
 hand-tuned baseline.  A small gain, consistent with the coupling-regime
 picture (the optimiser raised the leak and the drive, not the coupling).
 
+## The other regime: sub-switching macrospin dynamics (memory capacity ~10)
+
+A parallel session reached a memory capacity of about 10 with a very different
+reservoir: a square spin ice of point-dipole-coupled macrospins integrated with
+LLG (`asvi_rc/macrospin_llg.py`), driven far below switching.  Its pieces are
+now in this repository (`asvi_rc/demag_fourier.py`, `asvi_rc/macrospin_shaped.py`,
+`scripts/macrospin_rc.py`, `scripts/shape_design.py`) with this repository's
+held-out ridge readout, and the number reproduces.
+
+Operating point (dimensionless, so that shapes can be compared): drive
+amplitude 6 % of the anisotropy field B_k along 45 deg, held constant for one
+sample interval of 0.35 relaxation times tau = (1 + alpha^2) / (alpha gamma B_k),
+i.i.d. uniform inputs, all 3N magnetisation components as features.  4 x 4
+lattice (32 islands), B_k 50 mT, alpha 0.05: tau 2.3 ns, samples every 0.8 ns,
+dipolar fields 7-10 mT.
+
+| quantity | value |
+|---|---|
+| MC (lags 0..20, held out), seeds 0 / 1 / 2 | 10.3 / 10.1 / 3.0 |
+| product task u(t-1) u(t-2), R^2 | 0.62 |
+| MC at sample interval 0.2 / 0.35 / 0.7 / 1.5 / 3 tau | 12.8 / 10.3 / 6.3 / 3.2 / 1.9 |
+| MC at drive 2 / 6 / 12 / 25 / 50 / 100 % of B_k | 9.3 / 10.3 / 7.3 / 0 / 0.7 / 0.6 |
+| MC at alpha 0.02 / 0.05 / 0.1 / 0.2 (sampling scaled with tau) | 7.1 / 10.3 / 9.6 / 9.3 |
+| MC, 2 x 2 lattice (8 islands) | 7.0 |
+
+What the memory is.  Nothing switches: the array rings down after every
+input change, and the state a few relaxation times later still carries the
+last few inputs in the amplitudes and phases of its precessional modes.  The
+memory in samples is set by tau / (sample interval) - finer sampling gives
+more capacity in samples, not more in nanoseconds - and the physical window
+is a few tau, 5-10 ns here.  At 12 % of B_k the capacity already drops and at
+25 % (12.5 mT, where the 45 deg switching field is 25 mT minus the dipolar
+fields) it vanishes: the first switching events destroy it.  Seed 2 shows the
+other side of the coin: the capacity depends on which ice configuration the
+array relaxed into (its soft modes), 3 versus 10 for the same parameters.
+
+Island shape (`docs/data/macrospin/`): with the cross-section area fixed at
+17,700 nm^2 and 25 nm thickness, the ellipse sweep gives (3 seeds, 2000
+samples)
+
+| aspect | B_k (mT) | tau (ns) | MC (lags 1..40) | horizon (samples) | product-task R^2 |
+|---|---|---|---|---|---|
+| 1.2 | 29 | 4.0 | 7.2 | 7 | 0.72 |
+| 1.5 | 67 | 1.7 | 9.0 | 9 | 0.75 |
+| 2.0 | 119 | 0.95 | 7.7 | 8 | 0.51 |
+| 2.75 | 174 | 0.65 | 6.0 | 5 | 0.34 |
+| 4.0 | 221 | 0.51 | 5.0 | 4 | 0.25 |
+
+and a 57-shape random search over harmonics 2-4 (score = MC - 20 max(0, 0.7 -
+NL)) found a rounded, slightly lobed shape with B_k 29 mT, MC 7.6 and NL 0.63
+(score 6.3 against 4.9 for the best ellipse at 500 samples).  The search is
+rewarding low anisotropy: longer tau, a longer window in nanoseconds and more
+nonlinearity, at the price of a lower switching field.  The magnum.np soft
+geometry in this repository can do the same search by gradient.
+
+How this relates to the switching-regime work above.  The two regimes are
+complementary and should not be confused: the sub-switching reservoir has
+memory for free (linear ring-down of a many-mode system) and needs the drive
+kept small so that it does not switch; the switching reservoir (flatspin, the
+ASVI automaton, the field-loop protocols of the literature) has nonlinearity
+for free and only remembers when the vertex fields decide the switching.  A
+device that uses both would clock inputs slowly through the switching
+network and read the precessional response fast, which is what the
+multilayer-plus-FMR readout of the original ASVI proposal amounts to.
+
 ## What to do with it
 
 * The `escape` objective is the direct handle on the sink found in the
