@@ -21,7 +21,7 @@ from scripts.flatspin_rc import ridge_r2                                       #
 
 def run(a, lattice_constant, seed):
     lat = ASVILattice(a.catalogue, a.coercive, tuple(a.cells), lattice_constant, a.width, seed=seed, disorder=a.disorder,
-                      coupling=a.coupling, switching=a.switching)
+                      coupling=a.coupling, switching=a.switching, update=a.update, astroid=a.astroid)
     rng = np.random.default_rng(100 + seed)
     u = rng.random(a.n)
     d = np.array([np.cos(np.radians(a.angle)), np.sin(np.radians(a.angle))])
@@ -70,6 +70,8 @@ def main(argv=None):
     ap.add_argument("--width", type=float, default=2e-3)
     ap.add_argument("--disorder", type=float, default=0.05, help="relative spread of the per-island coercive fields")
     ap.add_argument("--coupling", type=float, default=1.0, help="multiplier on the inter-island (dumbbell) interaction")
+    ap.add_argument("--update", choices=["parallel", "sequential"], default="parallel", help="cascade update rule")
+    ap.add_argument("--astroid", type=float, nargs=4, default=None, help="generalised astroid (b, c, beta, gamma); default ideal SW")
     ap.add_argument("--switching", choices=["axial", "sw", "sw_ends"], default="axial",
                     help="axial: energy-gain criterion (calibrated coercive 0.05 0.0216); sw: Stoner-Wohlfarth on the local field")
     ap.add_argument("--ridge", type=float, default=1.0, help="ridge regularisation (features are O(1))")

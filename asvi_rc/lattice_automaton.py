@@ -47,7 +47,8 @@ def load_landscape(catalogue_path):
 
 class ASVILattice:
     def __init__(self, catalogue, coercive, n_cells=(4, 4), lattice_constant=None, width_T=2e-3,
-                 charge_pos=0.87, seed=0, pbc=False, disorder=0.0, coupling=1.0, switching="axial"):
+                 charge_pos=0.87, seed=0, pbc=False, disorder=0.0, coupling=1.0, switching="axial",
+                 update="parallel", astroid=None):
         """coercive: per-layer coercive fields (T) along the island axis; the angular dependence follows
         the Stoner-Wohlfarth astroid, B_c(theta) = B_c / (|cos|^(2/3) + |sin|^(2/3))^(3/2) (0.5 B_c at 45 deg).
         lattice_constant overrides the catalogue's length + 2 vertex_gap.  charge_pos: charge position
@@ -62,7 +63,14 @@ class ASVILattice:
                               perpendicular to the axis then lowers the threshold, as in flatspin;
                    'sw_ends' - as 'sw' but the local field is evaluated at the island's two end points
                               (nucleation sites next to the vertex charges of the neighbours) and the
-                              end with the larger switching margin decides."""
+                              end with the larger switching margin decides.
+        update: 'parallel' - each cascade round flips a random half of the islands above threshold;
+                'sequential' - flatspin-like: flip the single island with the largest margin, recompute,
+                repeat (no synchronous flip-flop of strongly coupled neighbours).
+        astroid: None for the ideal Stoner-Wohlfarth astroid, or (b, c, beta, gamma) of flatspin's generalised
+                astroid (|h_par|/(b hc))^(2/gamma) + (|h_perp|/(c hc))^(2/beta) > 1, with hc = B_c[layer];
+                flatspin's micromagnetic fits for stadium islands have b ~ 0.25-0.45 (easy-axis switching far
+                below the hard-axis scale), which makes a perpendicular stray field much more effective."""
         from .geometry import build_islands
         self.labels, self.E, self.m_axis, self.p = load_landscape(catalogue)
         self.K, self.L = self.m_axis.shape
@@ -124,6 +132,8 @@ class ASVILattice:
         Ke[np.repeat(same, self.nq, 1)[:, None, :].repeat(2, 1)] = 0.0
         self.Ke = Ke
         self.switching = switching
+        self.update = update
+        self.astroid = None if astroid is None else tuple(float(x) for x in astroid)
         # per-state charge vector (K, nq): [+q_l, -q_l] per layer
         self.Qs = np.zeros((self.K, self.nq))
         for l in range(self.L):
@@ -180,7 +190,19 @@ class ASVILattice:
         Bax_loc = np.einsum('ik,iek->ie', self.axis, Bloc)
         Bmag = np.linalg.norm(Bloc, axis=-1)                                     # (n, n_pts)
         c = np.abs(Bax_loc) / np.maximum(Bmag, 1e-15); sn = np.sqrt(np.clip(1 - c ** 2, 0, 1))
-        astro = np.where(Bmag > 0, 1.0 / np.maximum(c ** (2 / 3) + sn ** (2 / 3), 1e-9) ** 1.5, 1.0)
+        if self.astroid is None:
+            astro = np.where(Bmag > 0, 1.0 / np.maximum(c ** (2 / 3) + sn ** (2 / 3), 1e-9) ** 1.5, 1.0)
+        else:
+            # generalised astroid: threshold |B| along the local direction (c, sn) in units of hc, solved from
+            # (t c / b)^(2/gamma) + (t sn / cc)^(2/beta) = 1 by a few Newton steps on log t
+            b, cc, beta, gamma = self.astroid
+            t = np.full_like(c, 0.5)
+            for _ in range(12):
+                u = (t * c / b) ** (2 / gamma); v = (t * sn / cc) ** (2 / beta)
+                f = u + v - 1
+                df = (2 / gamma) * u + (2 / beta) * v                       # d f / d ln t
+                t = t * np.exp(-f / np.maximum(df, 1e-12))
+            astro = t
         # switching margin in tesla per unit coercive field: max over evaluation points of |B_loc| - Bc astro
         # (for the axial mode there is one point and Bmag is unused)
         out = []
@@ -211,7 +233,8 @@ class ASVILattice:
         sub-threshold transition fire eventually and randomise the lattice."""
         n_flips = 0
         noise = self.rng.standard_normal(self.n) * self.width if sample else np.zeros(self.n)
-        for _ in range(max_rounds):
+        rounds = max_rounds if self.update == "parallel" else 4 * self.n
+        for _ in range(rounds):
             gl = self.gains(B_ext)
             cand = []
             for i, rows in enumerate(gl):
@@ -219,12 +242,16 @@ class ASVILattice:
                     continue
                 j, l, g, bar = max(rows, key=lambda r: r[2] - r[3])
                 dMl = abs(self.M_layer[j, l] - self.M_layer[self.s[i], l])
-                if g - bar + noise[i] * dMl > 0:
-                    cand.append((i, j))
+                m = g - bar + noise[i] * dMl
+                if m > 0:
+                    cand.append((m, i, j))
             if not cand:
                 break
-            # simultaneous update of a random half (avoids two-island oscillations)
-            keep = [c for c in cand if self.rng.random() < 0.5] or cand[:1]
+            if self.update == "sequential":
+                keep = [max(cand)[1:]]                                           # largest margin only
+            else:
+                # simultaneous update of a random half (avoids two-island oscillations)
+                keep = [c[1:] for c in cand if self.rng.random() < 0.5] or [cand[0][1:]]
             for i, j in keep:
                 self.s[i] = j
             n_flips += len(keep)
