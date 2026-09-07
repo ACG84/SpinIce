@@ -28,11 +28,18 @@ def run(a, lattice_constant, seed):
     feats, flips, keys = [], [], []
     t0 = time.time()
     lat.reset(); cf = lat.coupling_field()
-    lat.relax(0.2 * d, sample=False); sf = lat.stray_field()                     # polarised along the drive
-    spar = np.abs(np.einsum('ik,ik->i', lat.axis, sf)); sperp = np.abs(sf[:, 0] * lat.axis[:, 1] - sf[:, 1] * lat.axis[:, 0])
+    lat.relax(0.2 * d, sample=False)                                            # polarised along the drive
     if seed == 0:
-        print(f"  coupling: ground-state axial equivalent {np.abs(cf).mean()*1e3:.1f} mT; polarised stray field "
-              f"|B_par| {spar.mean()*1e3:.1f} mT, |B_perp| {sperp.mean()*1e3:.1f} mT (max {sperp.max()*1e3:.1f})", flush=True)
+        msg = f"  coupling: ground-state axial equivalent {np.abs(cf).mean()*1e3:.1f} mT; polarised stray field"
+        for at in ("centre", "ends"):
+            sf = lat.stray_field(at)
+            if at == "ends":
+                sf = sf.reshape(-1, 2); ax = np.repeat(lat.axis, 2, 0)
+            else:
+                ax = lat.axis
+            spar = np.abs(np.einsum('ik,ik->i', ax, sf)); sperp = np.abs(sf[:, 0] * ax[:, 1] - sf[:, 1] * ax[:, 0])
+            msg += f" [{at}] |B_par| {spar.mean()*1e3:.1f} mT, |B_perp| {sperp.mean()*1e3:.1f} mT (max {sperp.max()*1e3:.1f})"
+        print(msg, flush=True)
     lat.reset()
     for t in range(a.n):
         L = a.leak + a.jitter * rng.uniform(-1, 1)
@@ -63,7 +70,7 @@ def main(argv=None):
     ap.add_argument("--width", type=float, default=2e-3)
     ap.add_argument("--disorder", type=float, default=0.05, help="relative spread of the per-island coercive fields")
     ap.add_argument("--coupling", type=float, default=1.0, help="multiplier on the inter-island (dumbbell) interaction")
-    ap.add_argument("--switching", choices=["axial", "sw"], default="axial",
+    ap.add_argument("--switching", choices=["axial", "sw", "sw_ends"], default="axial",
                     help="axial: energy-gain criterion (calibrated coercive 0.05 0.0216); sw: Stoner-Wohlfarth on the local field")
     ap.add_argument("--ridge", type=float, default=1.0, help="ridge regularisation (features are O(1))")
     ap.add_argument("--features", choices=["moment", "onehot"], default="moment")

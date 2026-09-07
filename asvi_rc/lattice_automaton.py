@@ -59,7 +59,10 @@ class ASVILattice:
                    'sw'     - Stoner-Wohlfarth on the LOCAL field (external + the other islands' stray field
                               at the island centre): fires when the transition is downhill in energy and
                               |B_loc| > B_c[layer] astro(theta_loc).  The stray field's component
-                              perpendicular to the axis then lowers the threshold, as in flatspin."""
+                              perpendicular to the axis then lowers the threshold, as in flatspin;
+                   'sw_ends' - as 'sw' but the local field is evaluated at the island's two end points
+                              (nucleation sites next to the vertex charges of the neighbours) and the
+                              end with the larger switching margin decides."""
         from .geometry import build_islands
         self.labels, self.E, self.m_axis, self.p = load_landscape(catalogue)
         self.K, self.L = self.m_axis.shape
@@ -113,6 +116,13 @@ class ASVILattice:
         Kf = coupling * MU0 / (4 * math.pi) * dvec / np.maximum(rr, 1e-12)[..., None] ** 3
         Kf[np.repeat(same, self.nq, 1)] = 0.0
         self.Kf = Kf
+        # same kernel at the two end points (layer-0 charge positions) of each island: (n, 2, n*nq, 2)
+        ends = self.cpos[:, 0, :, :]                                             # (n, 2, 2)
+        dv = ends[:, :, None, :] - flat[None, None, :, :]
+        rr = np.linalg.norm(dv, axis=-1)
+        Ke = coupling * MU0 / (4 * math.pi) * dv / np.maximum(rr, 1e-12)[..., None] ** 3
+        Ke[np.repeat(same, self.nq, 1)[:, None, :].repeat(2, 1)] = 0.0
+        self.Ke = Ke
         self.switching = switching
         # per-state charge vector (K, nq): [+q_l, -q_l] per layer
         self.Qs = np.zeros((self.K, self.nq))
@@ -134,9 +144,11 @@ class ASVILattice:
         Q = self.Qs[self.s].reshape(-1)                                          # (n*nq,)
         return (self.G @ Q).reshape(self.n, self.nq)
 
-    def stray_field(self):
-        """Stray field (T) of the other islands at each island centre, (n, 2)."""
+    def stray_field(self, at="centre"):
+        """Stray field (T) of the other islands at each island centre (n, 2) or at its two ends (n, 2, 2)."""
         Q = self.Qs[self.s].reshape(-1)
+        if at == "ends":
+            return np.einsum('iemk,m->iek', self.Ke, Q)
         return np.einsum('imk,m->ik', self.Kf, Q)
 
     def coupling_field(self):
@@ -160,13 +172,17 @@ class ASVILattice:
         B = np.asarray(B_ext[:2], dtype=float)
         Bax = self.axis @ B                                                      # external field along each axis (n,)
         if self.switching == "sw":
-            Bloc = B[None, :] + self.stray_field()                               # (n, 2)
+            Bloc = (B[None, :] + self.stray_field())[:, None, :]                 # (n, 1, 2)
+        elif self.switching == "sw_ends":
+            Bloc = B[None, None, :] + self.stray_field("ends")                   # (n, 2, 2)
         else:
-            Bloc = np.broadcast_to(B, (self.n, 2))
-        Bax_loc = np.einsum('ik,ik->i', self.axis, Bloc)
-        Bmag = np.linalg.norm(Bloc, axis=1)
+            Bloc = np.broadcast_to(B, (self.n, 1, 2))
+        Bax_loc = np.einsum('ik,iek->ie', self.axis, Bloc)
+        Bmag = np.linalg.norm(Bloc, axis=-1)                                     # (n, n_pts)
         c = np.abs(Bax_loc) / np.maximum(Bmag, 1e-15); sn = np.sqrt(np.clip(1 - c ** 2, 0, 1))
         astro = np.where(Bmag > 0, 1.0 / np.maximum(c ** (2 / 3) + sn ** (2 / 3), 1e-9) ** 1.5, 1.0)
+        # switching margin in tesla per unit coercive field: max over evaluation points of |B_loc| - Bc astro
+        # (for the axial mode there is one point and Bmag is unused)
         out = []
         for i in range(self.n):
             s = self.s[i]
@@ -177,12 +193,12 @@ class ASVILattice:
                 dQ = self.Qs[j] - self.Qs[s]
                 g = -dE + dM * Bax[i] - dQ @ Phi[i]                              # energy gain (J)
                 dMl = abs(self.M_layer[j, l] - self.M_layer[s, l])
-                if self.switching == "sw":
+                if self.switching in ("sw", "sw_ends"):
                     # downhill in energy AND |B_loc| above the astroid; margin in J for the noise comparison
-                    margin = (Bmag[i] - self.Bc[l] * self.bc_scale[i] * astro[i]) * dMl
+                    margin = np.max(Bmag[i] - self.Bc[l] * self.bc_scale[i] * astro[i]) * dMl
                     rows.append((j, l, margin if g > 0 else -np.inf, 0.0))
                 else:
-                    bar = self.Bc[l] * self.bc_scale[i] * astro[i] * dMl
+                    bar = self.Bc[l] * self.bc_scale[i] * astro[i, 0] * dMl
                     rows.append((j, l, g, bar))
             out.append(rows)
         return out
