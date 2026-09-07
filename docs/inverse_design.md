@@ -692,7 +692,10 @@ dipolar fields 7-10 mT.
 | MC at sample interval 0.2 / 0.35 / 0.7 / 1.5 / 3 tau | 12.8 / 10.3 / 6.3 / 3.2 / 1.9 |
 | MC at drive 2 / 6 / 12 / 25 / 50 / 100 % of B_k | 9.3 / 10.3 / 7.3 / 0 / 0.7 / 0.6 |
 | MC at alpha 0.02 / 0.05 / 0.1 / 0.2 (sampling scaled with tau) | 7.1 / 10.3 / 9.6 / 9.3 |
-| MC, 2 x 2 lattice (8 islands) | 7.0 |
+| MC, 2 x 2 / 4 x 4 / 6 x 6 / 8 x 8 lattice (8 / 32 / 72 / 128 islands) | 7.0 / 10.3 / 5.9 / 11.6 |
+| MC at lattice constant 300 / 600 / 1500 nm (dipolar 7.5 / 0.9 / 0.1 mT) | 10.3 / 4.9 / 2.0 |
+| MC at B_k 20 / 50 / 150 mT (sampling scaled with tau) | 8.3 / 10.3 / 7.1 |
+| MC with an extra mid-interval readout (192 features) | 11.2 |
 
 What the memory is.  Nothing switches: the array rings down after every
 input change, and the state a few relaxation times later still carries the
@@ -703,7 +706,13 @@ is a few tau, 5-10 ns here.  At 12 % of B_k the capacity already drops and at
 25 % (12.5 mT, where the 45 deg switching field is 25 mT minus the dipolar
 fields) it vanishes: the first switching events destroy it.  Seed 2 shows the
 other side of the coin: the capacity depends on which ice configuration the
-array relaxed into (its soft modes), 3 versus 10 for the same parameters.
+array relaxed into (its soft modes), 3 versus 10 for the same parameters, and
+the 6 x 6 lattice (5.9) against 4 x 4 (10.3) and 8 x 8 (11.6) is the same
+effect.  The memory is collective: with the islands 1500 nm apart (0.1 mT of
+dipolar field) every island is the same two-mode ring-down and the capacity
+falls to 2; at 600 nm (0.9 mT) it is 4.9.  The dipolar coupling spreads the
+mode frequencies and lifetimes, which is what turns N identical oscillators
+into a reservoir.
 
 Island shape (`docs/data/macrospin/`): with the cross-section area fixed at
 17,700 nm^2 and 25 nm thickness, the ellipse sweep gives (3 seeds, 2000

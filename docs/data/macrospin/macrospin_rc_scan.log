@@ -1,0 +1,99 @@
+### baseline 4x4, seeds
+== --seed 0
+32 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 10.34   R2(k=0..20): 1.00 1.00 1.00 0.99 0.98 0.96 0.90 0.83 0.72 0.63 0.49 0.34 0.25 0.17 0.07 0.02 -0.00 -0.02 -0.04 -0.04 -0.05
+  product task u(t-1)u(t-2): R2 0.68   (15 s)
+== --seed 1
+32 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 10.0 mT, 96 features
+  MC 10.08   R2(k=0..20): 1.00 1.00 1.00 0.99 0.99 0.98 0.96 0.92 0.80 0.59 0.41 0.24 0.12 0.05 0.02 0.01 -0.01 -0.01 -0.01 -0.01 -0.01
+  product task u(t-1)u(t-2): R2 0.76   (15 s)
+== --seed 2
+32 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 10.6 mT, 96 features
+  MC 2.99   R2(k=0..20): 0.98 0.97 0.82 -0.19 -0.24 0.23 -3.04 -14.60 -14.22 -61.60 -20.69 -1.04 -0.88 -2.94 -2.07 -2.72 -24.48 -5.25 -38.66 -26.23 -3.41
+  product task u(t-1)u(t-2): R2 -1.31   (16 s)
+### damping (tau) and sampling interval
+== --alpha 0.02
+32 islands, Bk 50 mT, drive 3.0 mT, tau 5.68 ns, sample 1.99 ns (139 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 7.10   R2(k=0..20): 1.00 0.99 0.98 0.95 0.90 0.82 0.68 0.44 0.25 0.09 0.01 -0.02 -0.02 -0.05 -0.07 -0.09 -0.07 -0.07 -0.07 -0.06 -0.09
+  product task u(t-1)u(t-2): R2 0.74   (37 s)
+== --alpha 0.1
+32 islands, Bk 50 mT, drive 3.0 mT, tau 1.15 ns, sample 0.40 ns (28 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 9.64   R2(k=0..20): 1.00 0.98 0.93 0.82 0.67 0.61 0.58 0.53 0.48 0.44 0.41 0.39 0.36 0.34 0.31 0.27 0.22 0.16 0.10 0.04 0.00
+  product task u(t-1)u(t-2): R2 0.62   (8 s)
+== --alpha 0.2
+32 islands, Bk 50 mT, drive 3.0 mT, tau 0.59 ns, sample 0.21 ns (14 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 9.34   R2(k=0..20): 1.00 1.00 0.97 0.94 0.81 0.76 0.56 0.50 0.45 0.41 0.36 0.32 0.28 0.23 0.20 0.17 0.14 0.11 0.07 0.05 0.02
+  product task u(t-1)u(t-2): R2 0.28   (4 s)
+== --sample-tau 0.2
+32 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 0.46 ns (32 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 12.77   R2(k=0..20): 1.00 0.99 0.98 0.97 0.94 0.90 0.85 0.78 0.71 0.63 0.56 0.53 0.49 0.46 0.41 0.36 0.33 0.27 0.23 0.21 0.18
+  product task u(t-1)u(t-2): R2 0.62   (8 s)
+== --sample-tau 0.7
+32 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 1.59 ns (112 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 6.27   R2(k=0..20): 1.00 1.00 0.99 0.97 0.90 0.70 0.44 0.21 0.06 0.00 -0.02 -0.03 -0.03 -0.04 -0.04 -0.04 -0.04 -0.05 -0.05 -0.05 -0.05
+  product task u(t-1)u(t-2): R2 0.67   (30 s)
+== --sample-tau 1.5
+32 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 3.42 ns (239 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 3.16   R2(k=0..20): 1.00 1.00 0.86 0.31 -0.01 -0.02 -0.03 -0.02 -0.02 -0.02 -0.03 -0.02 -0.02 -0.03 -0.03 -0.03 -0.03 -0.04 -0.04 -0.03 -0.03
+  product task u(t-1)u(t-2): R2 0.60   (65 s)
+== --sample-tau 3.0
+32 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 6.83 ns (479 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 1.92   R2(k=0..20): 1.00 0.92 -0.01 -0.03 -0.04 -0.01 -0.03 -0.03 -0.02 -0.03 -0.02 -0.03 -0.02 -0.03 -0.03 -0.03 -0.03 -0.04 -0.03 -0.03 -0.03
+  product task u(t-1)u(t-2): R2 0.02   (129 s)
+### drive amplitude toward switching
+== --drive 0.02
+32 islands, Bk 50 mT, drive 1.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 9.34   R2(k=0..20): 1.00 1.00 0.99 0.99 0.96 0.90 0.81 0.71 0.60 0.48 0.34 0.23 0.15 0.10 0.05 0.02 -0.00 -0.01 -0.02 -0.03 -0.03
+  product task u(t-1)u(t-2): R2 0.12   (15 s)
+== --drive 0.12
+32 islands, Bk 50 mT, drive 6.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 7.29   R2(k=0..20): 1.00 0.99 0.98 0.96 0.93 0.86 0.62 0.41 0.26 0.18 0.07 0.03 -0.03 -0.06 -0.07 -0.06 -0.06 -0.07 -0.10 -0.08 -0.10
+  product task u(t-1)u(t-2): R2 0.78   (15 s)
+== --drive 0.25
+32 islands, Bk 50 mT, drive 12.5 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 0.00   R2(k=0..20): -1.58 -41.78 -37.72 -97.51 -5.20 -9.77 -112.17 -11.36 -59.40 -8.33 -37.91 -0.90 -12.43 -31.00 -29.72 -11.04 -0.63 -64.06 -114.30 -11.21 -6.62
+  product task u(t-1)u(t-2): R2 -38.27   (15 s)
+== --drive 0.5
+32 islands, Bk 50 mT, drive 25.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 0.71   R2(k=0..20): 0.61 0.07 0.03 -0.00 -0.05 -0.09 -0.11 -0.08 -0.11 -0.10 -0.09 -0.09 -0.07 -0.06 -0.11 -0.11 -0.11 -0.11 -0.03 -0.11 -0.12
+  product task u(t-1)u(t-2): R2 -0.19   (15 s)
+== --drive 1.0
+32 islands, Bk 50 mT, drive 50.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 7.5 mT, 96 features
+  MC 0.63   R2(k=0..20): 0.49 0.12 0.02 -0.00 -0.07 -0.08 -0.08 -0.07 -0.10 -0.12 -0.12 -0.10 -0.13 -0.13 -0.09 -0.07 -0.05 -0.10 -0.11 -0.11 -0.11
+  product task u(t-1)u(t-2): R2 -0.05   (15 s)
+### size and coupling
+== --nx 2 --ny 2
+8 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 8.1 mT, 24 features
+  MC 6.97   R2(k=0..20): 1.00 0.99 0.98 0.97 0.95 0.90 0.56 0.33 0.20 0.06 0.02 -0.01 -0.03 -0.03 -0.04 -0.04 -0.03 -0.04 -0.04 -0.04 -0.04
+  product task u(t-1)u(t-2): R2 0.46   (14 s)
+== --nx 6 --ny 6
+72 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 10.5 mT, 216 features
+  MC 5.89   R2(k=0..20): 1.00 1.00 0.98 0.98 0.64 0.59 0.10 0.60 -0.07 -0.47 -0.10 -2.64 -1.60 -7.64 -0.08 -1.64 -3.71 -1.43 -1.19 -2.40 -1.63
+  product task u(t-1)u(t-2): R2 0.69   (19 s)
+== --nx 8 --ny 8
+128 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 9.9 mT, 384 features
+  MC 11.62   R2(k=0..20): 1.00 1.00 1.00 1.00 0.99 0.98 0.97 0.93 0.87 0.77 0.64 0.53 0.42 0.30 0.16 0.04 0.01 -0.09 -0.12 -0.13 -0.17
+  product task u(t-1)u(t-2): R2 0.83   (29 s)
+== --lattice 600e-9
+32 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 0.9 mT, 96 features
+  MC 4.87   R2(k=0..20): 0.98 0.83 0.53 0.50 0.45 0.40 0.33 0.30 0.25 0.18 0.10 0.02 -0.00 -0.02 -0.02 -0.03 -0.03 -0.03 -0.03 -0.04 -0.04
+  product task u(t-1)u(t-2): R2 0.14   (15 s)
+== --lattice 1500e-9
+32 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 0.1 mT, 96 features
+  MC 2.00   R2(k=0..20): 0.80 0.48 0.40 0.18 0.09 0.04 0.01 -0.01 -0.02 -0.02 -0.02 -0.03 -0.03 -0.03 -0.03 -0.03 -0.03 -0.03 -0.03 -0.03 -0.03
+  product task u(t-1)u(t-2): R2 0.06   (15 s)
+### Bk (island shape / material): 20 and 150 mT
+== --bk 0.02
+32 islands, Bk 20 mT, drive 1.2 mT, tau 5.69 ns, sample 1.99 ns (56 steps of 35.7 ps), dipolar 11.0 mT, 96 features
+  MC 8.26   R2(k=0..20): 1.00 1.00 0.99 0.99 0.97 0.93 0.85 0.69 0.45 0.24 0.10 0.03 0.01 -0.02 -0.03 -0.04 -0.03 -0.04 -0.05 -0.06 -0.06
+  product task u(t-1)u(t-2): R2 0.69   (15 s)
+== --bk 0.15
+32 islands, Bk 150 mT, drive 9.0 mT, tau 0.76 ns, sample 0.27 ns (56 steps of 4.8 ps), dipolar 7.4 mT, 96 features
+  MC 7.13   R2(k=0..20): 1.00 0.97 0.88 0.74 0.63 0.62 0.56 0.50 0.42 0.32 0.24 0.14 0.08 0.03 -0.01 -0.02 -0.03 -0.04 -0.04 -0.04 -0.05
+  product task u(t-1)u(t-2): R2 0.28   (15 s)
+### mid-interval readout
+== --mid
+32 islands, Bk 50 mT, drive 3.0 mT, tau 2.28 ns, sample 0.80 ns (56 steps of 14.3 ps), dipolar 7.5 mT, 192 features
+  MC 11.21   R2(k=0..20): 1.00 1.00 1.00 1.00 0.99 0.98 0.95 0.89 0.81 0.71 0.61 0.46 0.35 0.25 0.15 0.06 0.01 -0.01 -0.04 -0.05 -0.06
+  product task u(t-1)u(t-2): R2 0.78   (15 s)
+### done
