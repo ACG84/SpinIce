@@ -48,7 +48,7 @@ def load_landscape(catalogue_path):
 class ASVILattice:
     def __init__(self, catalogue, coercive, n_cells=(4, 4), lattice_constant=None, width_T=2e-3,
                  charge_pos=0.87, seed=0, pbc=False, disorder=0.0, coupling=1.0, switching="axial",
-                 update="parallel", astroid=None):
+                 update="parallel", astroid=None, field_model="charge"):
         """coercive: per-layer coercive fields (T) along the island axis; the angular dependence follows
         the Stoner-Wohlfarth astroid, B_c(theta) = B_c / (|cos|^(2/3) + |sin|^(2/3))^(3/2) (0.5 B_c at 45 deg).
         lattice_constant overrides the catalogue's length + 2 vertex_gap.  charge_pos: charge position
@@ -70,7 +70,9 @@ class ASVILattice:
         astroid: None for the ideal Stoner-Wohlfarth astroid, or (b, c, beta, gamma) of flatspin's generalised
                 astroid (|h_par|/(b hc))^(2/gamma) + (|h_perp|/(c hc))^(2/beta) > 1, with hc = B_c[layer];
                 flatspin's micromagnetic fits for stadium islands have b ~ 0.25-0.45 (easy-axis switching far
-                below the hard-axis scale), which makes a perpendicular stray field much more effective."""
+                below the hard-axis scale), which makes a perpendicular stray field much more effective.
+        field_model: 'charge' - stray field of the end charges (dumbbell), 'dipole' - flatspin-like point
+                dipoles at the island centres (per-layer moments along the axis)."""
         from .geometry import build_islands
         self.labels, self.E, self.m_axis, self.p = load_landscape(catalogue)
         self.K, self.L = self.m_axis.shape
@@ -130,7 +132,26 @@ class ASVILattice:
         rr = np.linalg.norm(dv, axis=-1)
         Ke = coupling * MU0 / (4 * math.pi) * dv / np.maximum(rr, 1e-12)[..., None] ** 3
         Ke[np.repeat(same, self.nq, 1)[:, None, :].repeat(2, 1)] = 0.0
+        if field_model == "dipole":
+            # point-dipole kernel from island centres: B(r) = mu0/4pi (3 (m.r^) r^ - m) / r^3 with m = M_l axis,
+            # laid out on the (n*nq) charge vector: the layer's + charge carries the moment (M_l = Q_l * V/A),
+            # the - charge nothing
+            leff = self.vol / self.cross                                          # per layer: M / Q (m)
+            def dip(points):                                                     # (..., 2) -> (..., n*nq, 2)
+                out = np.zeros(points.shape[:-1] + (self.n * self.nq, 2))
+                for j in range(self.n):
+                    r = points - self.centre[j]
+                    rr = np.linalg.norm(r, axis=-1, keepdims=True)
+                    rh = r / np.maximum(rr, 1e-12)
+                    for l in range(self.L):
+                        m = self.axis[j] * leff[l]
+                        out[..., j * self.nq + 2 * l, :] = coupling * MU0 / (4 * math.pi) * (
+                            3 * (rh @ m)[..., None] * rh - m) / np.maximum(rr, 1e-12) ** 3
+                return out
+            Kf = dip(self.centre); Kf[np.repeat(same, self.nq, 1)] = 0.0; self.Kf = Kf
+            Ke = dip(ends); Ke[np.repeat(same, self.nq, 1)[:, None, :].repeat(2, 1)] = 0.0
         self.Ke = Ke
+        self.field_model = field_model
         self.switching = switching
         self.update = update
         self.astroid = None if astroid is None else tuple(float(x) for x in astroid)

@@ -602,18 +602,38 @@ all 6 x 6, 45 deg, 2 seeds):
 | flatspin alpha 0.005 | 9 par / 25 perp mT | 15 mT | 1.7 | 0.25 |
 | flatspin alpha 0.007 | 12 par / 35 perp mT | 15 mT | 2.3 | 0.37 (window retuned) |
 
-The automaton does not reproduce flatspin's behaviour even at x4-x8
-coupling (it saturates or freezes instead of forming the disordered,
-neighbour-stabilised states flatspin visits), so the last row of the ASVI
-side is a limitation of the charge automaton as much as of the geometry;
-the design conclusion that survives all of this is the ratio in the fourth
-column: fading memory in a field-driven spin ice needs vertex fields at
-least comparable to the switching field, and the Dion et al. geometry
-(550 nm islands on an 800 nm pitch) sits a factor 3-5 below that.  The
-handles are the ones the inverse-design gradients rank: thicker layers and
-a smaller vertex gap raise the vertex field, a wider / thinner top layer
-lowers its switching field (13 nm / 152 nm halved it in the escape-field
-run), and both move the ratio in the same direction.
+The automaton does not reproduce flatspin's behaviour at strong coupling:
+with the interaction multiplied by 4-8 and flatspin-scaled windows (1.5-2.5
+x threshold, leak 1 x) it saturates (every island flips every stage, one
+state) or freezes, and so does a control that gives it flatspin's own
+numbers (point-dipole fields, `field_model="dipole"`, B_c = 30 mT so that
+the 45 deg threshold is 15 mT, coupling scaled to 9 mT parallel / 19 mT
+perpendicular on the polarised lattice, window 45-75 mT, leak 30 mT,
+sequential updates): 61 flips per step, one state, no memory, where
+flatspin gives 58 flips, 20 states and MC 1.1.  The reason is that
+flatspin's memory lives in a near-critical corner of the astroid: a
+perpendicular neighbour field of 25 mT against a 30 mT hard-axis field
+collapses the parallel switching field from 15 mT to about 1 mT
+(hc (1 - (h_perp/hc)^(2/3))^(3/2)), so which islands switch is decided by
+the small, configuration-dependent parallel residue of the neighbour field,
+and the outcome depends on the exact field pattern (the point-dipole square
+ice has a 3 : 1 perpendicular-to-parallel ratio, the charge model at the
+island ends about 2.5 : 1 and the parallel part is larger relative to the
+threshold, which tips every island the same way).  The sharper design
+statement is therefore: fading memory appears when the neighbours'
+perpendicular field approaches the hard-axis switching field of the
+island.  For the Dion et al. geometry that ratio is 11 mT / 72 mT = 0.15
+at the island ends (0.02 at the centre); flatspin's memory band is 0.5-1.2
+(alpha 0.003-0.007).  The handles are the ones the inverse-design gradients
+rank: thicker layers and a smaller vertex gap raise the vertex field
+(x2-3 is realistic before the islands touch), a wider / thinner top layer
+lowers its switching fields (13 nm / 152 nm halved the escape field), and
+a less elongated island lowers the hard-axis field most directly, at the
+price of bistability.  Whether the real reversal of a 550 x 140 nm stadium
+(nucleation at the ends, not coherent rotation) is as sensitive to a
+perpendicular vertex field as the astroid says is exactly what the
+micromagnetic hysteresis at several field angles would tell, and it is the
+cheapest next calculation: a single-island angular sweep on the CPU.
 
 ### Differential-evolution design of the flatspin lattice (8 parameters)
 
